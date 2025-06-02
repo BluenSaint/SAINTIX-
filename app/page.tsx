@@ -1,108 +1,141 @@
 "use client"
 
 import { useState } from "react"
+import { useAuth } from "@/components/auth/auth-provider"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import CreditScoreWidget from "@/components/dashboard/credit-score-widget"
-import ProgressChart from "@/components/client-portal/progress-chart"
-import GoalTracker from "@/components/client-portal/goal-tracker"
 import {
-  ArrowRight,
-  Star,
-  Shield,
-  TrendingUp,
-  Users,
-  CheckCircle,
-  Clock,
-  Award,
-  Target,
-  BarChart3,
   CreditCard,
-  Quote,
-  Play,
-  Menu,
-  X,
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
+  TrendingUp,
+  Shield,
+  Users,
+  Star,
+  ArrowRight,
+  CheckCircle,
+  BarChart3,
+  Target,
+  Zap,
+  Phone,
+  Mail,
   MessageCircle,
+  Play,
   Calculator,
-  Brain,
-  Smartphone,
   BookOpen,
   Video,
-  ChevronRight,
-  Lock,
-  Download,
-  UserCheck,
-  Home,
-  Car,
+  FileText,
+  Award,
+  Globe,
+  Smartphone,
 } from "lucide-react"
+import Link from "next/link"
 
-export default function SaintrixLanding() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [email, setEmail] = useState("")
+export default function HomePage() {
+  const { user } = useAuth()
   const [currentScore, setCurrentScore] = useState(580)
   const [targetScore, setTargetScore] = useState(750)
+  const [income, setIncome] = useState(75000)
+  const [debts, setDebts] = useState(25000)
 
-  // Mock data for components
-  const scoreHistory = [
-    { date: "Jan", experian: 580, equifax: 575, transunion: 585 },
-    { date: "Feb", experian: 610, equifax: 605, transunion: 615 },
-    { date: "Mar", experian: 645, equifax: 640, transunion: 650 },
-    { date: "Apr", experian: 680, equifax: 675, transunion: 685 },
-    { date: "May", experian: 710, equifax: 705, transunion: 715 },
-    { date: "Jun", experian: 740, equifax: 735, transunion: 745 },
+  // AI Credit Estimator Logic
+  const calculateEstimate = () => {
+    const baseImprovement = Math.min((targetScore - currentScore) * 0.8, 170)
+    const incomeBonus = Math.min(income / 10000, 20)
+    const debtPenalty = Math.min(debts / 5000, 30)
+    const timeEstimate = Math.max(3, Math.ceil((targetScore - currentScore) / 15))
+
+    return {
+      improvement: Math.round(baseImprovement + incomeBonus - debtPenalty),
+      timeMonths: timeEstimate,
+      successRate: Math.min(95, 60 + income / 2000 - debts / 2000),
+    }
+  }
+
+  const estimate = calculateEstimate()
+
+  const successStories = [
+    {
+      name: "Maria Rodriguez",
+      before: 520,
+      after: 780,
+      timeframe: "8 months",
+      savings: "$45,000",
+      story: "Bought her dream home with the lowest interest rate",
+    },
+    {
+      name: "James Wilson",
+      before: 610,
+      after: 750,
+      timeframe: "6 months",
+      savings: "$12,000",
+      story: "Qualified for premium credit cards and auto loan",
+    },
+    {
+      name: "Sarah Chen",
+      before: 480,
+      after: 720,
+      timeframe: "12 months",
+      savings: "$28,000",
+      story: "Eliminated high-interest debt and improved credit",
+    },
   ]
 
-  const calculateMonthsToGoal = (current: number, target: number) => {
-    const pointsNeeded = target - current
-    const avgPointsPerMonth = 25 // Based on our average
-    return Math.ceil(pointsNeeded / avgPointsPerMonth)
-  }
-
-  const calculateSavings = (scoreIncrease: number) => {
-    // Estimated savings based on credit score improvement
-    const mortgageSavings = scoreIncrease * 50 // $50 per point on mortgage
-    const autoLoanSavings = scoreIncrease * 25 // $25 per point on auto loan
-    const creditCardSavings = scoreIncrease * 15 // $15 per point on credit cards
-    return mortgageSavings + autoLoanSavings + creditCardSavings
-  }
-
-  const testimonials = [
+  const services = [
     {
-      name: "Sarah Rodriguez",
-      location: "Miami, FL",
-      beforeScore: 542,
-      afterScore: 721,
-      timeframe: "8 months",
-      savings: "$47,000",
-      story: "I was able to buy my first home thanks to Saintrix!",
-      image: "/placeholder.svg?height=80&width=80&text=SR",
+      title: "Credit Analysis & Repair",
+      description: "Comprehensive credit report analysis with personalized dispute strategies",
+      icon: BarChart3,
+      features: ["3-Bureau Analysis", "Dispute Letters", "Progress Tracking"],
     },
     {
-      name: "Michael Chen",
-      location: "Austin, TX",
-      beforeScore: 598,
-      afterScore: 756,
-      timeframe: "6 months",
-      savings: "$23,500",
-      story: "Got approved for a business loan I never thought possible.",
-      image: "/placeholder.svg?height=80&width=80&text=MC",
+      title: "AI-Powered Optimization",
+      description: "Advanced algorithms to identify the fastest path to your credit goals",
+      icon: Zap,
+      features: ["Smart Recommendations", "Predictive Modeling", "Real-time Updates"],
     },
     {
-      name: "Jennifer Davis",
-      location: "Phoenix, AZ",
-      beforeScore: 515,
-      afterScore: 689,
-      timeframe: "10 months",
-      savings: "$31,200",
-      story: "Finally qualified for that dream car loan!",
-      image: "/placeholder.svg?height=80&width=80&text=JD",
+      title: "Expert Consultation",
+      description: "One-on-one guidance from certified credit repair specialists",
+      icon: Users,
+      features: ["Personal Advisor", "Monthly Check-ins", "Custom Strategy"],
+    },
+  ]
+
+  const pricingPlans = [
+    {
+      name: "Basic",
+      price: 89,
+      description: "Perfect for getting started",
+      features: ["Credit report analysis", "Basic dispute letters", "Monthly progress reports", "Email support"],
+      popular: false,
+    },
+    {
+      name: "Advanced",
+      price: 149,
+      description: "Most popular choice",
+      features: [
+        "Everything in Basic",
+        "AI-powered optimization",
+        "Priority dispute processing",
+        "Phone support",
+        "Credit monitoring",
+      ],
+      popular: true,
+    },
+    {
+      name: "Elite",
+      price: 249,
+      description: "Maximum results guaranteed",
+      features: [
+        "Everything in Advanced",
+        "Dedicated specialist",
+        "Expedited processing",
+        "Identity theft protection",
+        "Legal consultation",
+      ],
+      popular: false,
     },
   ]
 
@@ -111,7 +144,7 @@ export default function SaintrixLanding() {
       {/* Navigation */}
       <nav className="bg-white/90 backdrop-blur-xl border-b border-orange-100/50 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl flex items-center justify-center">
                 <CreditCard className="w-6 h-6 text-white" />
@@ -122,409 +155,244 @@ export default function SaintrixLanding() {
             </div>
 
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#services" className="text-slate-700 hover:text-orange-600 font-medium transition-colors">
+              <a href="#services" className="text-slate-700 hover:text-orange-600 transition-colors">
                 Services
               </a>
-              <a href="#calculator" className="text-slate-700 hover:text-orange-600 font-medium transition-colors">
-                Calculator
+              <a href="#how-it-works" className="text-slate-700 hover:text-orange-600 transition-colors">
+                How It Works
               </a>
-              <a href="#success-stories" className="text-slate-700 hover:text-orange-600 font-medium transition-colors">
-                Success Stories
+              <a href="#pricing" className="text-slate-700 hover:text-orange-600 transition-colors">
+                Pricing
               </a>
-              <a href="#education" className="text-slate-700 hover:text-orange-600 font-medium transition-colors">
-                Learn
-              </a>
-              <a href="#contact" className="text-slate-700 hover:text-orange-600 font-medium transition-colors">
+              <a href="#contact" className="text-slate-700 hover:text-orange-600 transition-colors">
                 Contact
               </a>
             </div>
 
-            <div className="hidden md:flex items-center gap-4">
-              <Button variant="outline" className="rounded-xl">
-                Client Portal
-              </Button>
-              <Button className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl shadow-lg">
-                Get Started Free
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-
-            <div className="md:hidden">
-              <Button variant="ghost" size="sm" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </Button>
+            <div className="flex items-center gap-3">
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-slate-600">Welcome, {user.name}</span>
+                  <Link href={user.role === "admin" ? "/admin" : "/client-portal"}>
+                    <Button className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl">
+                      Go to {user.role === "admin" ? "Admin" : "Portal"}
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" className="text-slate-700 hover:text-orange-600">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/login">
+                    <Button className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
-
-          {isMenuOpen && (
-            <div className="md:hidden py-4 border-t border-orange-100">
-              <div className="flex flex-col space-y-4">
-                <a href="#services" className="text-slate-700 hover:text-orange-600 font-medium">
-                  Services
-                </a>
-                <a href="#calculator" className="text-slate-700 hover:text-orange-600 font-medium">
-                  Calculator
-                </a>
-                <a href="#success-stories" className="text-slate-700 hover:text-orange-600 font-medium">
-                  Success Stories
-                </a>
-                <a href="#education" className="text-slate-700 hover:text-orange-600 font-medium">
-                  Learn
-                </a>
-                <a href="#contact" className="text-slate-700 hover:text-orange-600 font-medium">
-                  Contact
-                </a>
-                <div className="flex flex-col gap-3 pt-4">
-                  <Button variant="outline" className="rounded-xl">
-                    Client Portal
-                  </Button>
-                  <Button className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl">
-                    Get Started Free
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 overflow-hidden">
+      <section className="relative py-20 overflow-hidden">
+        {/* Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-orange-200/30 to-amber-200/30 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-amber-200/30 to-yellow-200/30 rounded-full blur-3xl"></div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-16">
-            <Badge className="bg-orange-100 text-orange-700 border-orange-200 mb-6 px-4 py-2 rounded-full">
-              <Star className="w-4 h-4 mr-2" />
-              #1 AI-Powered Credit Repair Platform
-            </Badge>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <Badge className="bg-orange-100 text-orange-700 border-orange-200 mb-6">
+                <Star className="w-4 h-4 mr-2" />
+                #1 Rated Credit Repair Service
+              </Badge>
 
-            <h1 className="text-5xl lg:text-7xl font-bold text-slate-900 mb-6 leading-tight">
-              Transform Your
-              <span className="bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent block">
-                Credit Score
-              </span>
-              with AI Intelligence
-            </h1>
+              <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+                Transform Your
+                <span className="bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent block">
+                  Credit Score
+                </span>
+                in 90 Days
+              </h1>
 
-            <p className="text-xl lg:text-2xl text-slate-600 mb-12 leading-relaxed max-w-4xl mx-auto">
-              Join over 50,000 families who've improved their credit scores by an average of 127 points using our
-              revolutionary AI-powered credit repair system. See results in as little as 30 days.
-            </p>
+              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
+                Our AI-powered credit repair system has helped over 50,000 families improve their credit scores and save
+                thousands on loans, mortgages, and insurance.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl shadow-xl text-lg px-8 py-4"
-              >
-                <Brain className="w-5 h-5 mr-2" />
-                Start AI Credit Analysis
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-              <Button size="lg" variant="outline" className="rounded-xl text-lg px-8 py-4">
-                <Play className="w-5 h-5 mr-2" />
-                Watch Demo Video
-              </Button>
-            </div>
-
-            {/* Trust Indicators */}
-            <div className="flex flex-wrap justify-center items-center gap-8 text-sm text-slate-600">
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-emerald-600" />
-                <span>100% Money Back Guarantee</span>
+              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                <Link href="/login">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl text-lg px-8 py-4"
+                  >
+                    Start Free Analysis
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+                <Button size="lg" variant="outline" className="rounded-xl text-lg px-8 py-4">
+                  <Play className="w-5 h-5 mr-2" />
+                  Watch Demo
+                </Button>
               </div>
-              <div className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-blue-600" />
-                <span>BBB A+ Rated</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Lock className="w-5 h-5 text-purple-600" />
-                <span>Bank-Level Security</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-orange-600" />
-                <span>50,000+ Happy Clients</span>
+
+              <div className="flex items-center gap-8">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-slate-900">50K+</div>
+                  <div className="text-sm text-slate-600">Clients Helped</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-slate-900">127</div>
+                  <div className="text-sm text-slate-600">Avg Point Increase</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-slate-900">98%</div>
+                  <div className="text-sm text-slate-600">Success Rate</div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Hero Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <Card className="bg-white/80 backdrop-blur-sm border border-orange-200/50 shadow-xl rounded-3xl text-center p-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-8 h-8 text-orange-600" />
-              </div>
-              <p className="text-3xl font-bold text-slate-900 mb-2">127+</p>
-              <p className="text-slate-600">Avg Score Increase</p>
-            </Card>
-
-            <Card className="bg-white/80 backdrop-blur-sm border border-emerald-200/50 shadow-xl rounded-3xl text-center p-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Target className="w-8 h-8 text-emerald-600" />
-              </div>
-              <p className="text-3xl font-bold text-slate-900 mb-2">94.2%</p>
-              <p className="text-slate-600">Success Rate</p>
-            </Card>
-
-            <Card className="bg-white/80 backdrop-blur-sm border border-blue-200/50 shadow-xl rounded-3xl text-center p-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-blue-600" />
-              </div>
-              <p className="text-3xl font-bold text-slate-900 mb-2">30</p>
-              <p className="text-slate-600">Days to Results</p>
-            </Card>
-
-            <Card className="bg-white/80 backdrop-blur-sm border border-purple-200/50 shadow-xl rounded-3xl text-center p-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-purple-600" />
-              </div>
-              <p className="text-3xl font-bold text-slate-900 mb-2">50K+</p>
-              <p className="text-slate-600">Clients Helped</p>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* AI Credit Estimator */}
-      <section id="calculator" className="py-20 bg-white/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">AI Credit Score Estimator</h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              See your potential credit score improvement and estimated savings with our advanced AI calculator.
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
-            {/* Calculator */}
-            <Card className="bg-gradient-to-br from-orange-50 to-amber-50/30 border border-orange-200/50 shadow-xl rounded-3xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-2xl">
+            {/* AI Credit Estimator */}
+            <Card className="bg-white/80 backdrop-blur-sm border border-orange-200/50 shadow-2xl rounded-3xl">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl">
                     <Calculator className="w-6 h-6 text-orange-600" />
                   </div>
-                  Credit Score Calculator
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
-                    Current Credit Score: {currentScore}
-                  </label>
-                  <input
-                    type="range"
-                    min="300"
-                    max="850"
-                    value={currentScore}
-                    onChange={(e) => setCurrentScore(Number(e.target.value))}
-                    className="w-full h-3 bg-orange-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <div className="flex justify-between text-xs text-slate-500 mt-1">
-                    <span>300</span>
-                    <span>850</span>
-                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900">AI Credit Estimator</h3>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
-                    Target Credit Score: {targetScore}
-                  </label>
-                  <input
-                    type="range"
-                    min={currentScore}
-                    max="850"
-                    value={targetScore}
-                    onChange={(e) => setTargetScore(Number(e.target.value))}
-                    className="w-full h-3 bg-emerald-200 rounded-lg appearance-none cursor-pointer slider"
-                  />
-                  <div className="flex justify-between text-xs text-slate-500 mt-1">
-                    <span>{currentScore}</span>
-                    <span>850</span>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Current Credit Score</label>
+                    <Input
+                      type="range"
+                      min="300"
+                      max="850"
+                      value={currentScore}
+                      onChange={(e) => setCurrentScore(Number(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-slate-500 mt-1">
+                      <span>300</span>
+                      <span className="font-bold text-slate-900">{currentScore}</span>
+                      <span>850</span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Results */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-orange-200/30">
-                  <h4 className="font-bold text-slate-900 mb-4">Your Estimated Results</h4>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Target Credit Score</label>
+                    <Input
+                      type="range"
+                      min={currentScore}
+                      max="850"
+                      value={targetScore}
+                      onChange={(e) => setTargetScore(Number(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-sm text-slate-500 mt-1">
+                      <span>{currentScore}</span>
+                      <span className="font-bold text-slate-900">{targetScore}</span>
+                      <span>850</span>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-emerald-50 rounded-xl">
-                      <p className="text-2xl font-bold text-emerald-800">+{targetScore - currentScore}</p>
-                      <p className="text-xs text-emerald-600">Point Increase</p>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Annual Income</label>
+                      <Input
+                        type="number"
+                        value={income}
+                        onChange={(e) => setIncome(Number(e.target.value))}
+                        placeholder="75000"
+                        className="rounded-xl"
+                      />
                     </div>
-                    <div className="text-center p-3 bg-blue-50 rounded-xl">
-                      <p className="text-2xl font-bold text-blue-800">
-                        {calculateMonthsToGoal(currentScore, targetScore)}
-                      </p>
-                      <p className="text-xs text-blue-600">Months to Goal</p>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Total Debt</label>
+                      <Input
+                        type="number"
+                        value={debts}
+                        onChange={(e) => setDebts(Number(e.target.value))}
+                        placeholder="25000"
+                        className="rounded-xl"
+                      />
                     </div>
                   </div>
-                  <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-200">
-                    <p className="text-center">
-                      <span className="text-sm text-slate-600">Estimated Lifetime Savings:</span>
-                      <span className="block text-3xl font-bold text-orange-800">
-                        ${calculateSavings(targetScore - currentScore).toLocaleString()}
-                      </span>
-                    </p>
+
+                  {/* Results */}
+                  <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-6 border border-emerald-200/50">
+                    <h4 className="font-bold text-emerald-900 mb-4">Your Personalized Estimate</h4>
+
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-emerald-800">+{estimate.improvement}</div>
+                        <div className="text-xs text-emerald-600">Point Increase</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-emerald-800">{estimate.timeMonths}</div>
+                        <div className="text-xs text-emerald-600">Months</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-emerald-800">{Math.round(estimate.successRate)}%</div>
+                        <div className="text-xs text-emerald-600">Success Rate</div>
+                      </div>
+                    </div>
+
+                    <Link href="/login">
+                      <Button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl">
+                        Get Your Free Analysis
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
                   </div>
                 </div>
-
-                <Button className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl py-4 text-lg font-semibold">
-                  <Brain className="w-5 h-5 mr-2" />
-                  Get My Personalized Plan
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
               </CardContent>
             </Card>
-
-            {/* Benefits Breakdown */}
-            <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-slate-900">What This Means for You</h3>
-
-              <div className="space-y-4">
-                <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50 shadow-lg rounded-2xl">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-emerald-200/50 rounded-xl flex items-center justify-center">
-                        <Home className="w-6 h-6 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-emerald-800">Home Mortgage</h4>
-                        <p className="text-sm text-emerald-600">Lower interest rates</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-emerald-800">
-                      Save ${((targetScore - currentScore) * 50).toLocaleString()}
-                    </p>
-                    <p className="text-sm text-emerald-600">Over 30-year mortgage</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50 shadow-lg rounded-2xl">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-blue-200/50 rounded-xl flex items-center justify-center">
-                        <Car className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-blue-800">Auto Loans</h4>
-                        <p className="text-sm text-blue-600">Better financing options</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-blue-800">
-                      Save ${((targetScore - currentScore) * 25).toLocaleString()}
-                    </p>
-                    <p className="text-sm text-blue-600">Over loan lifetime</p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50 shadow-lg rounded-2xl">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-purple-200/50 rounded-xl flex items-center justify-center">
-                        <CreditCard className="w-6 h-6 text-purple-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-purple-800">Credit Cards</h4>
-                        <p className="text-sm text-purple-600">Premium rewards & rates</p>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-bold text-purple-800">
-                      Save ${((targetScore - currentScore) * 15).toLocaleString()}
-                    </p>
-                    <p className="text-sm text-purple-600">Annual savings</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Progress Tracking Demo */}
-      <section className="py-20">
+      {/* Services Section */}
+      <section id="services" className="py-20 bg-white/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Track Your Progress in Real-Time</h2>
+            <Badge className="bg-blue-100 text-blue-700 border-blue-200 mb-4">Our Services</Badge>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Comprehensive Credit Solutions</h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Watch your credit score improve month by month with our advanced tracking and goal-setting tools.
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-12">
-            <ProgressChart scoreHistory={scoreHistory} />
-            <GoalTracker currentScore={680} targetScore={750} targetDate="2024-12-31" progress={68} />
-          </div>
-        </div>
-      </section>
-
-      {/* Success Stories */}
-      <section id="success-stories" className="py-20 bg-gradient-to-br from-slate-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Real Families, Real Results</h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              See how Saintrix has transformed the financial lives of thousands of families across America.
+              From analysis to optimization, we provide everything you need to achieve your credit goals
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
+            {services.map((service, index) => (
               <Card
                 key={index}
-                className="bg-white border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl overflow-hidden"
+                className="bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl group"
               >
                 <CardContent className="p-8">
-                  <div className="flex items-center gap-4 mb-6">
-                    <img
-                      src={testimonial.image || "/placeholder.svg"}
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                    <div>
-                      <h4 className="font-bold text-slate-900">{testimonial.name}</h4>
-                      <p className="text-sm text-slate-600">{testimonial.location}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
-                    </div>
+                  <div className="p-4 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl w-fit mb-6 group-hover:scale-110 transition-transform">
+                    <service.icon className="w-8 h-8 text-blue-600" />
                   </div>
 
-                  <div className="mb-6">
-                    <Quote className="w-8 h-8 text-orange-300 mb-4" />
-                    <p className="text-slate-700 italic leading-relaxed">"{testimonial.story}"</p>
-                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4">{service.title}</h3>
+                  <p className="text-slate-600 mb-6">{service.description}</p>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl">
-                      <span className="text-sm font-medium text-slate-700">Before</span>
-                      <span className="text-lg font-bold text-red-600">{testimonial.beforeScore}</span>
-                    </div>
-                    <div className="flex items-center justify-center">
-                      <ArrowRight className="w-6 h-6 text-orange-500" />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl">
-                      <span className="text-sm font-medium text-slate-700">After</span>
-                      <span className="text-lg font-bold text-emerald-600">{testimonial.afterScore}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-6 border-t border-gray-100">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <p className="text-sm text-slate-600">Timeframe</p>
-                        <p className="font-bold text-slate-900">{testimonial.timeframe}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-600">Savings</p>
-                        <p className="font-bold text-emerald-600">{testimonial.savings}</p>
-                      </div>
-                    </div>
-                  </div>
+                  <ul className="space-y-3">
+                    {service.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-emerald-500" />
+                        <span className="text-slate-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             ))}
@@ -532,97 +400,128 @@ export default function SaintrixLanding() {
         </div>
       </section>
 
-      {/* Mobile App Preview */}
-      <section className="py-20">
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <Badge className="bg-blue-100 text-blue-700 border-blue-200 mb-6 px-4 py-2 rounded-full">
-                <Smartphone className="w-4 h-4 mr-2" />
-                Mobile App Available
-              </Badge>
+          <div className="text-center mb-16">
+            <Badge className="bg-purple-100 text-purple-700 border-purple-200 mb-4">How It Works</Badge>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Simple 4-Step Process</h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">Our proven methodology gets results fast</p>
+          </div>
 
-              <h2 className="text-4xl font-bold text-slate-900 mb-6">
-                Manage Your Credit
-                <span className="bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent block">
-                  On the Go
-                </span>
-              </h2>
-
-              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-                Track your progress, receive real-time alerts, and manage your credit repair journey from anywhere with
-                our award-winning mobile app.
-              </p>
-
-              <div className="space-y-4 mb-8">
-                {[
-                  "Real-time credit score monitoring",
-                  "Instant dispute status updates",
-                  "AI-powered credit insights",
-                  "Secure document upload",
-                  "24/7 expert chat support",
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                    <span className="text-slate-700">{feature}</span>
+          <div className="grid md:grid-cols-4 gap-8">
+            {[
+              {
+                step: "01",
+                title: "Free Analysis",
+                description: "We analyze your credit reports from all three bureaus",
+                icon: BarChart3,
+              },
+              {
+                step: "02",
+                title: "Custom Strategy",
+                description: "AI creates a personalized plan for maximum impact",
+                icon: Target,
+              },
+              {
+                step: "03",
+                title: "Dispute Process",
+                description: "We handle all disputes and negotiations for you",
+                icon: Shield,
+              },
+              {
+                step: "04",
+                title: "Track Progress",
+                description: "Monitor improvements in real-time dashboard",
+                icon: TrendingUp,
+              },
+            ].map((step, index) => (
+              <div key={index} className="text-center group">
+                <div className="relative mb-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform shadow-lg">
+                    <step.icon className="w-10 h-10 text-white" />
                   </div>
-                ))}
-              </div>
-
-              <div className="flex gap-4">
-                <Button className="bg-slate-900 hover:bg-slate-800 rounded-xl">
-                  <Download className="w-5 h-5 mr-2" />
-                  Download iOS App
-                </Button>
-                <Button variant="outline" className="rounded-xl">
-                  <Download className="w-5 h-5 mr-2" />
-                  Download Android
-                </Button>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="relative mx-auto w-80 h-96 bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-2 shadow-2xl">
-                <div className="w-full h-full bg-white rounded-2xl overflow-hidden">
-                  <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-20 flex items-center justify-center">
-                    <h3 className="text-white font-bold text-lg">Saintrix App</h3>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <CreditScoreWidget
-                      currentScore={687}
-                      previousScore={642}
-                      bureau="Average Score"
-                      lastUpdated="Today"
-                    />
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl">
-                        <span className="text-sm font-medium">Disputes Active</span>
-                        <Badge className="bg-emerald-100 text-emerald-700">3</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
-                        <span className="text-sm font-medium">Goal Progress</span>
-                        <Badge className="bg-blue-100 text-blue-700">68%</Badge>
-                      </div>
-                    </div>
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    {step.step}
                   </div>
                 </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
+                <p className="text-slate-600">{step.description}</p>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Success Stories */}
+      <section className="py-20 bg-white/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 mb-4">Success Stories</Badge>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Real Results from Real People</h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              See how our clients transformed their financial lives
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {successStories.map((story, index) => (
+              <Card
+                key={index}
+                className="bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl"
+              >
+                <CardContent className="p-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-lg">
+                        {story.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900">{story.name}</h3>
+                      <p className="text-slate-600">{story.timeframe}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="text-center p-4 bg-red-50 rounded-2xl">
+                      <div className="text-2xl font-bold text-red-700">{story.before}</div>
+                      <div className="text-sm text-red-600">Before</div>
+                    </div>
+                    <div className="text-center p-4 bg-emerald-50 rounded-2xl">
+                      <div className="text-2xl font-bold text-emerald-700">{story.after}</div>
+                      <div className="text-sm text-emerald-600">After</div>
+                    </div>
+                  </div>
+
+                  <div className="text-center mb-4">
+                    <div className="text-3xl font-bold text-emerald-600">{story.savings}</div>
+                    <div className="text-sm text-slate-600">Total Savings</div>
+                  </div>
+
+                  <p className="text-slate-700 text-center italic">"{story.story}"</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Credit Education Hub */}
-      <section id="education" className="py-20 bg-gradient-to-br from-orange-50 to-amber-50/30">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Credit Education Hub</h2>
+            <Badge className="bg-amber-100 text-amber-700 border-amber-200 mb-4">Education Hub</Badge>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Master Your Credit Knowledge</h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Empower yourself with knowledge. Learn the insider secrets to building and maintaining excellent credit.
+              Free resources to help you understand and improve your credit
             </p>
           </div>
 
-          <Tabs defaultValue="guides" className="max-w-4xl mx-auto">
+          <Tabs defaultValue="guides" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-8">
               <TabsTrigger value="guides" className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
@@ -638,169 +537,87 @@ export default function SaintrixLanding() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="guides" className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <TabsContent value="guides">
+              <div className="grid md:grid-cols-3 gap-6">
                 {[
-                  {
-                    title: "Complete Guide to Credit Scores",
-                    description: "Everything you need to know about how credit scores work",
-                    readTime: "8 min read",
-                    category: "Basics",
-                  },
-                  {
-                    title: "Dispute Letters That Actually Work",
-                    description: "Proven templates and strategies for successful disputes",
-                    readTime: "12 min read",
-                    category: "Advanced",
-                  },
-                  {
-                    title: "Building Credit from Scratch",
-                    description: "Step-by-step guide for credit beginners",
-                    readTime: "6 min read",
-                    category: "Basics",
-                  },
-                  {
-                    title: "Credit Utilization Optimization",
-                    description: "Advanced techniques to maximize your score",
-                    readTime: "10 min read",
-                    category: "Advanced",
-                  },
+                  "Understanding Credit Scores",
+                  "Dispute Letter Templates",
+                  "Credit Building Strategies",
+                  "Identity Theft Protection",
+                  "Mortgage Preparation Guide",
+                  "Business Credit Basics",
                 ].map((guide, index) => (
                   <Card
                     key={index}
-                    className="bg-white border border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl group cursor-pointer"
+                    className="bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl group cursor-pointer"
                   >
                     <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <Badge
-                          className={`${
-                            guide.category === "Advanced"
-                              ? "bg-purple-100 text-purple-700 border-purple-200"
-                              : "bg-blue-100 text-blue-700 border-blue-200"
-                          }`}
-                        >
-                          {guide.category}
-                        </Badge>
-                        <ChevronRight className="w-5 h-5 text-orange-500 group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center gap-3 mb-3">
+                        <FileText className="w-6 h-6 text-blue-600" />
+                        <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                          {guide}
+                        </h3>
                       </div>
-                      <h3 className="font-bold text-slate-900 mb-2 group-hover:text-orange-600 transition-colors">
-                        {guide.title}
-                      </h3>
-                      <p className="text-slate-600 mb-4">{guide.description}</p>
-                      <p className="text-sm text-slate-500">{guide.readTime}</p>
+                      <p className="text-slate-600 text-sm mb-4">
+                        Comprehensive guide with actionable steps and expert insights.
+                      </p>
+                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 p-0">
+                        Read More <ArrowRight className="w-4 h-4 ml-1" />
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </TabsContent>
 
-            <TabsContent value="videos" className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <TabsContent value="videos">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
-                  {
-                    title: "Credit Score Basics Explained",
-                    duration: "5:32",
-                    views: "12.5K",
-                    thumbnail: "/placeholder.svg?height=200&width=300&text=Video+1",
-                  },
-                  {
-                    title: "How to Dispute Credit Report Errors",
-                    duration: "8:45",
-                    views: "8.2K",
-                    thumbnail: "/placeholder.svg?height=200&width=300&text=Video+2",
-                  },
-                  {
-                    title: "Building Credit with Secured Cards",
-                    duration: "6:18",
-                    views: "15.1K",
-                    thumbnail: "/placeholder.svg?height=200&width=300&text=Video+3",
-                  },
-                  {
-                    title: "Advanced Credit Optimization",
-                    duration: "12:03",
-                    views: "6.7K",
-                    thumbnail: "/placeholder.svg?height=200&width=300&text=Video+4",
-                  },
+                  "Credit Score Basics (5 min)",
+                  "Dispute Process Walkthrough (12 min)",
+                  "Building Credit from Scratch (8 min)",
+                  "Advanced Optimization Tips (15 min)",
                 ].map((video, index) => (
                   <Card
                     key={index}
-                    className="bg-white border border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl group cursor-pointer overflow-hidden"
+                    className="bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl group cursor-pointer"
                   >
-                    <div className="relative">
-                      <img
-                        src={video.thumbnail || "/placeholder.svg"}
-                        alt={video.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                        <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Play className="w-8 h-8 text-orange-600 ml-1" />
-                        </div>
+                    <CardContent className="p-6">
+                      <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl mb-4 flex items-center justify-center group-hover:from-blue-100 group-hover:to-blue-200 transition-all">
+                        <Play className="w-12 h-12 text-slate-600 group-hover:text-blue-600 transition-colors" />
                       </div>
-                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                        {video.duration}
-                      </div>
-                    </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-bold text-slate-900 mb-2 group-hover:text-orange-600 transition-colors">
-                        {video.title}
-                      </h3>
-                      <p className="text-sm text-slate-500">{video.views} views</p>
+                      <h3 className="font-bold text-slate-900 mb-2">{video}</h3>
+                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 p-0">
+                        Watch Now <ArrowRight className="w-4 h-4 ml-1" />
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </TabsContent>
 
-            <TabsContent value="tools" className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <TabsContent value="tools">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
-                  {
-                    title: "Credit Utilization Calculator",
-                    description: "Calculate your optimal credit card balances",
-                    icon: Calculator,
-                    color: "blue",
-                  },
-                  {
-                    title: "Debt Payoff Planner",
-                    description: "Create a strategic debt elimination plan",
-                    icon: Target,
-                    color: "emerald",
-                  },
-                  {
-                    title: "Credit Mix Analyzer",
-                    description: "Optimize your credit account portfolio",
-                    icon: BarChart3,
-                    color: "purple",
-                  },
-                  {
-                    title: "Score Improvement Tracker",
-                    description: "Monitor your progress over time",
-                    icon: TrendingUp,
-                    color: "orange",
-                  },
+                  { name: "Credit Score Calculator", desc: "Estimate your potential score improvement" },
+                  { name: "Debt-to-Income Ratio", desc: "Calculate your DTI for loan applications" },
+                  { name: "Payment Calculator", desc: "See how payments affect your credit utilization" },
+                  { name: "Timeline Planner", desc: "Plan your credit improvement journey" },
                 ].map((tool, index) => (
                   <Card
                     key={index}
-                    className="bg-white border border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl group cursor-pointer"
+                    className="bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl group cursor-pointer"
                   >
                     <CardContent className="p-6">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div
-                          className={`w-12 h-12 bg-gradient-to-br from-${tool.color}-100 to-${tool.color}-200 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}
-                        >
-                          <tool.icon className={`w-6 h-6 text-${tool.color}-600`} />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
-                            {tool.title}
-                          </h3>
-                          <p className="text-slate-600 text-sm">{tool.description}</p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-orange-500 group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center gap-3 mb-3">
+                        <Calculator className="w-6 h-6 text-emerald-600" />
+                        <h3 className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                          {tool.name}
+                        </h3>
                       </div>
-                      <Button variant="outline" className="w-full rounded-xl border-orange-200 hover:bg-orange-50">
-                        Use Tool
+                      <p className="text-slate-600 text-sm mb-4">{tool.desc}</p>
+                      <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 p-0">
+                        Use Tool <ArrowRight className="w-4 h-4 ml-1" />
                       </Button>
                     </CardContent>
                   </Card>
@@ -811,49 +628,181 @@ export default function SaintrixLanding() {
         </div>
       </section>
 
-      {/* Live Chat Widget */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          size="lg"
-          className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-full shadow-2xl animate-pulse"
-        >
-          <MessageCircle className="w-6 h-6 mr-2" />
-          Chat with Expert
-        </Button>
-      </div>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-orange-600 to-amber-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to Transform Your Financial Future?</h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join thousands of families who've improved their credit and achieved their dreams with Saintrix.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-md mx-auto mb-8">
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-white/20 border-white/30 text-white placeholder:text-white/70 rounded-xl"
-            />
-            <Button className="bg-white text-orange-600 hover:bg-gray-100 rounded-xl px-8 whitespace-nowrap">
-              <Brain className="w-5 h-5 mr-2" />
-              Start Free Analysis
-            </Button>
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 bg-white/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <Badge className="bg-green-100 text-green-700 border-green-200 mb-4">Pricing Plans</Badge>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Choose Your Success Plan</h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Transparent pricing with no hidden fees. Cancel anytime.
+            </p>
           </div>
 
-          <p className="text-sm opacity-75">
-            No credit card required • AI analysis in 60 seconds • 100% money-back guarantee
-          </p>
+          <div className="grid md:grid-cols-3 gap-8">
+            {pricingPlans.map((plan, index) => (
+              <Card
+                key={index}
+                className={`bg-white/80 backdrop-blur-sm border shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl relative ${
+                  plan.popular ? "border-orange-300 ring-2 ring-orange-200 scale-105" : "border-slate-200/50"
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-orange-500 text-white border-orange-600 px-4 py-1">Most Popular</Badge>
+                  </div>
+                )}
+
+                <CardContent className="p-8">
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
+                    <p className="text-slate-600 mb-4">{plan.description}</p>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-5xl font-bold text-slate-900">${plan.price}</span>
+                      <span className="text-slate-600">/month</span>
+                    </div>
+                  </div>
+
+                  <ul className="space-y-4 mb-8">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-slate-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link href="/login">
+                    <Button
+                      className={`w-full rounded-xl ${
+                        plan.popular
+                          ? "bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700"
+                          : "bg-slate-900 hover:bg-slate-800"
+                      }`}
+                    >
+                      Get Started
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-slate-600 mb-4">All plans include our 90-day money-back guarantee</p>
+            <div className="flex items-center justify-center gap-8 text-sm text-slate-500">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <span>Secure & Encrypted</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4" />
+                <span>BBB Accredited</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                <span>FCRA Compliant</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <Badge className="bg-blue-100 text-blue-700 border-blue-200 mb-6">Get In Touch</Badge>
+
+              <h2 className="text-4xl font-bold text-slate-900 mb-6">Ready to Transform Your Credit?</h2>
+
+              <p className="text-xl text-slate-600 mb-8">
+                Speak with a credit specialist today and get your free consultation.
+              </p>
+
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 rounded-xl">
+                    <Phone className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-900">Call Us</div>
+                    <div className="text-slate-600">(555) 123-CREDIT</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-100 rounded-xl">
+                    <Mail className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-900">Email Us</div>
+                    <div className="text-slate-600">support@saintrix.com</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-100 rounded-xl">
+                    <MessageCircle className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-900">Live Chat</div>
+                    <div className="text-slate-600">Available 24/7</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Card className="bg-white/80 backdrop-blur-sm border border-slate-200/50 shadow-2xl rounded-3xl">
+              <CardContent className="p-8">
+                <h3 className="text-2xl font-bold text-slate-900 mb-6">Free Consultation</h3>
+
+                <form className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">First Name</label>
+                      <Input placeholder="John" className="rounded-xl" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Last Name</label>
+                      <Input placeholder="Doe" className="rounded-xl" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
+                    <Input type="email" placeholder="john@example.com" className="rounded-xl" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Phone</label>
+                    <Input type="tel" placeholder="(555) 123-4567" className="rounded-xl" />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Current Credit Score (if known)
+                    </label>
+                    <Input placeholder="e.g. 580" className="rounded-xl" />
+                  </div>
+
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl">
+                    Schedule Free Consultation
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-slate-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl flex items-center justify-center">
@@ -863,112 +812,89 @@ export default function SaintrixLanding() {
                   SAINTRIX
                 </h3>
               </div>
-              <p className="text-slate-400 mb-6">
-                Transforming credit scores and changing lives with AI-powered credit repair solutions.
-              </p>
-              <div className="flex gap-4">
-                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors cursor-pointer">
-                  <Facebook className="w-5 h-5" />
+              <p className="text-slate-400 mb-6">Transforming credit scores and changing lives since 2020.</p>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors cursor-pointer">
+                  <Globe className="w-5 h-5" />
                 </div>
-                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors cursor-pointer">
-                  <Twitter className="w-5 h-5" />
-                </div>
-                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors cursor-pointer">
-                  <Instagram className="w-5 h-5" />
-                </div>
-                <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-orange-600 transition-colors cursor-pointer">
-                  <Linkedin className="w-5 h-5" />
+                <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors cursor-pointer">
+                  <Smartphone className="w-5 h-5" />
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="font-bold text-lg mb-6">Services</h4>
+              <h4 className="font-bold text-white mb-4">Services</h4>
               <ul className="space-y-3 text-slate-400">
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    AI Credit Analysis
+                  <a href="#" className="hover:text-white transition-colors">
+                    Credit Analysis
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Credit Repair
+                  <a href="#" className="hover:text-white transition-colors">
+                    Dispute Management
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Score Monitoring
+                  <a href="#" className="hover:text-white transition-colors">
+                    Credit Monitoring
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     Identity Protection
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Credit Building
                   </a>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold text-lg mb-6">Resources</h4>
+              <h4 className="font-bold text-white mb-4">Resources</h4>
               <ul className="space-y-3 text-slate-400">
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     Credit Education
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Success Stories
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     Blog
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Credit Tools
+                  <a href="#" className="hover:text-white transition-colors">
+                    Success Stories
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Mobile App
+                  <a href="#" className="hover:text-white transition-colors">
+                    Free Tools
                   </a>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold text-lg mb-6">Support</h4>
+              <h4 className="font-bold text-white mb-4">Company</h4>
               <ul className="space-y-3 text-slate-400">
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Help Center
+                  <a href="#" className="hover:text-white transition-colors">
+                    About Us
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Contact Us
+                  <a href="#" className="hover:text-white transition-colors">
+                    Contact
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
-                    Client Portal
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     Privacy Policy
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-orange-400 transition-colors">
+                  <a href="#" className="hover:text-white transition-colors">
                     Terms of Service
                   </a>
                 </li>
@@ -976,27 +902,32 @@ export default function SaintrixLanding() {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-slate-400 text-sm">© 2024 Saintrix Credit Repair. All rights reserved.</p>
-              <div className="flex items-center gap-6 text-sm text-slate-400">
-                <span className="flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  BBB A+ Rated
-                </span>
-                <span className="flex items-center gap-2">
-                  <Award className="w-4 h-4" />
-                  FCRA Compliant
-                </span>
-                <span className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  Money Back Guarantee
-                </span>
-              </div>
+          <div className="border-t border-slate-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-slate-400 text-sm">© 2024 Saintrix. All rights reserved.</p>
+            <div className="flex items-center gap-6 mt-4 md:mt-0">
+              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                <Shield className="w-3 h-3 mr-1" />
+                FCRA Compliant
+              </Badge>
+              <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                <Award className="w-3 h-3 mr-1" />
+                BBB Accredited
+              </Badge>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* Live Chat Widget */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          size="lg"
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full shadow-2xl animate-pulse"
+        >
+          <MessageCircle className="w-6 h-6 mr-2" />
+          Chat Now
+        </Button>
+      </div>
     </div>
   )
 }
