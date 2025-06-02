@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { creditReports, storage } from '@/lib/database'
-import { useAuth } from './useAuth'
+import { creditReports } from '@/lib/database'
+import { uploadFile } from '@/lib/storage'
+import { useAuth } from '@/components/auth/auth-provider'
 import type { CreditReport } from '@/lib/supabase'
 
 export function useCreditReports() {
@@ -13,14 +14,14 @@ export function useCreditReports() {
 
   useEffect(() => {
     if (user) {
-      loadReports()
+      fetchReports()
     } else {
       setReports([])
       setLoading(false)
     }
   }, [user])
 
-  const loadReports = async () => {
+  const fetchReports = async () => {
     if (!user) return
 
     try {
@@ -41,12 +42,16 @@ export function useCreditReports() {
       setUploading(true)
       
       // Upload file to storage
-      const uploadResult = await storage.uploadCreditReport(file, user.id)
+      const uploadResult = await uploadFile(file, user.id, 'credit-reports')
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Upload failed')
+      }
       
       // Create database record
       const report = await creditReports.uploadReport(
         user.id,
-        uploadResult.publicUrl,
+        uploadResult.url!,
         source
       )
       
@@ -63,15 +68,16 @@ export function useCreditReports() {
   }
 
   const refreshReports = () => {
-    loadReports()
+    fetchReports()
   }
 
   return {
-    reports,
+    creditReports: reports,
     loading,
     uploading,
     uploadReport,
     refreshReports,
+    fetchReports,
   }
 }
 

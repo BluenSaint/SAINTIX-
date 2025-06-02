@@ -17,22 +17,53 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
-  const { login, isLoading } = useAuth()
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [fullName, setFullName] = useState("")
+  const { signIn, signUp, loading } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
-    const success = await login(email, password)
-    if (!success) {
-      setError("Invalid email or password")
+    try {
+      if (isSignUp) {
+        if (!fullName.trim()) {
+          setError("Full name is required")
+          return
+        }
+        await signUp(email, password, fullName)
+        setError("")
+        setIsSignUp(false)
+        // Show success message
+        setError("Account created! Please check your email to verify your account before signing in.")
+      } else {
+        await signIn(email, password)
+      }
+    } catch (error: any) {
+      console.error('Auth error:', error)
+      setError(error.message || "Authentication failed. Please try again.")
     }
   }
 
   const demoAccounts = [
-    { email: "admin@saintrix.com", role: "Admin", description: "Full system access" },
-    { email: "client@example.com", role: "Client", description: "Client portal access" },
-    { email: "team@saintrix.com", role: "Team Member", description: "Team dashboard access" },
+    { 
+      email: "admin@saintrix.com", 
+      role: "Admin", 
+      description: "Full system access",
+      note: "Create this account first"
+    },
+    { 
+      email: "client@saintrix.com", 
+      role: "Client", 
+      description: "Client portal access",
+      note: "Create this account first"
+    },
+    { 
+      email: "team@saintrix.com", 
+      role: "Team Member", 
+      description: "Team dashboard access",
+      note: "Create this account first"
+    },
   ]
 
   return (
@@ -48,16 +79,35 @@ export default function LoginPage() {
               SAINTRIX
             </h1>
           </div>
-          <p className="text-slate-600">Sign in to your account</p>
+          <p className="text-slate-600">
+            {isSignUp ? "Create your account" : "Sign in to your account"}
+          </p>
         </div>
 
-        {/* Login Form */}
+        {/* Login/Signup Form */}
         <Card className="bg-white/80 backdrop-blur-sm border border-orange-200/50 shadow-xl rounded-3xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-center text-xl">Welcome Back</CardTitle>
+            <CardTitle className="text-center text-xl">
+              {isSignUp ? "Create Account" : "Welcome Back"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    required
+                    className="rounded-xl"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -81,6 +131,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
+                    minLength={6}
                     className="rounded-xl pr-10"
                   />
                   <Button
@@ -96,31 +147,46 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <Alert className="border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-700">{error}</AlertDescription>
+                <Alert className={`border-red-200 bg-red-50 ${error.includes('created') ? 'border-green-200 bg-green-50' : ''}`}>
+                  <AlertDescription className={error.includes('created') ? 'text-green-700' : 'text-red-700'}>
+                    {error}
+                  </AlertDescription>
                 </Alert>
               )}
 
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 rounded-xl"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? (
+                {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Signing in...
+                    {isSignUp ? "Creating account..." : "Signing in..."}
                   </>
                 ) : (
-                  "Sign In"
+                  isSignUp ? "Create Account" : "Sign In"
                 )}
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <Link href="/" className="text-sm text-orange-600 hover:text-orange-700">
-                ← Back to Home
-              </Link>
+            <div className="mt-6 text-center space-y-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setIsSignUp(!isSignUp)
+                  setError("")
+                }}
+                className="text-sm text-orange-600 hover:text-orange-700"
+              >
+                {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
+              </Button>
+              
+              <div>
+                <Link href="/" className="text-sm text-slate-600 hover:text-slate-700">
+                  ← Back to Home
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -137,12 +203,14 @@ export default function LoginPage() {
                 className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"
                 onClick={() => {
                   setEmail(account.email)
-                  setPassword("password")
+                  setPassword("password123")
+                  setFullName(account.role + " User")
                 }}
               >
                 <div>
                   <p className="font-medium text-sm text-slate-900">{account.role}</p>
                   <p className="text-xs text-slate-600">{account.description}</p>
+                  <p className="text-xs text-orange-600">{account.note}</p>
                 </div>
                 <Button variant="ghost" size="sm" className="text-xs">
                   Use Account
@@ -150,7 +218,7 @@ export default function LoginPage() {
               </div>
             ))}
             <p className="text-xs text-center text-slate-500 mt-3">
-              Password: <code className="bg-slate-200 px-1 rounded">password</code>
+              Password: <code className="bg-slate-200 px-1 rounded">password123</code>
             </p>
           </CardContent>
         </Card>
@@ -158,3 +226,4 @@ export default function LoginPage() {
     </div>
   )
 }
+

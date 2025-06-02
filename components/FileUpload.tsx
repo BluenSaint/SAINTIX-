@@ -1,28 +1,27 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useAuth } from '@/components/auth/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react'
-import { fileUpload } from '@/lib/storage'
-import { useCreditReports } from '@/hooks/useCreditReports'
+import { uploadFile } from '@/lib/storage'
+import { creditReports } from '@/lib/database'
 
 interface FileUploadProps {
-  type: 'credit_report' | 'supporting_doc'
-  onUploadComplete?: (result: any) => void
+  onUploadComplete?: (fileUrl: string) => void
 }
 
-export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
+export function FileUpload({ onUploadComplete }: FileUploadProps) {
+  const { user } = useAuth()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
-  const { uploadReport } = useCreditReports()
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -31,10 +30,17 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
     setError(null)
     setSuccess(false)
 
-    // Validate file
-    const validation = fileUpload.validateFile(file, type)
-    if (!validation.isValid) {
-      setError(validation.errors.join(', '))
+    // Validate file type
+    const allowedTypes = ['application/pdf']
+    if (!allowedTypes.includes(file.type)) {
+      setError('Only PDF files are allowed for credit reports')
+      return
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      setError('File size too large. Maximum size is 10MB.')
       return
     }
 
@@ -42,7 +48,7 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
   }
 
   const handleUpload = async () => {
-    if (!selectedFile) return
+    if (!selectedFile || !user) return
 
     try {
       setUploading(true)
@@ -54,16 +60,29 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
         setUploadProgress(prev => Math.min(prev + 10, 90))
       }, 200)
 
-      let result
-      if (type === 'credit_report') {
-        result = await uploadReport(selectedFile, 'manual_upload')
-      } else {
-        // Handle supporting document upload
-        // This would use a different function for supporting docs
-        throw new Error('Supporting document upload not implemented yet')
-      }
+      // Upload file to storage
+      const uploadResult = await uploadFile(
+        selectedFile, 
+        user.id, 
+        'credit-reports',
+        (progress) => {
+          setUploadProgress(progress.percentage)
+        }
+      )
 
       clearInterval(progressInterval)
+
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Upload failed')
+      }
+
+      // Create credit report record in database
+      await creditReports.uploadReport(
+        user.id,
+        uploadResult.url!,
+        'Manual Upload'
+      )
+
       setUploadProgress(100)
       setSuccess(true)
       setSelectedFile(null)
@@ -72,7 +91,7 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
         fileInputRef.current.value = ''
       }
 
-      onUploadComplete?.(result)
+      onUploadComplete?.(uploadResult.url!)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
@@ -95,29 +114,23 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
     }
   }
 
-  const getTitle = () => {
-    return type === 'credit_report' ? 'Upload Credit Report' : 'Upload Supporting Document'
-  }
-
-  const getDescription = () => {
-    return type === 'credit_report' 
-      ? 'Upload your credit report PDF (max 10MB)'
-      : 'Upload supporting documents - PDF, JPG, or PNG (max 5MB)'
-  }
-
-  const getAcceptedTypes = () => {
-    return type === 'credit_report' ? '.pdf' : '.pdf,.jpg,.jpeg,.png'
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          {getTitle()}
+          Upload Credit Report
         </CardTitle>
         <CardDescription>
-          {getDescription()}
+          Upload your credit report PDF (max 10MB)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -129,12 +142,12 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
         >
           <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
           <p className="text-sm text-gray-600 mb-2">
-            Drag and drop your file here, or click to browse
+            Drag and drop your PDF file here, or click to browse
           </p>
           <input
             ref={fileInputRef}
             type="file"
-            accept={getAcceptedTypes()}
+            accept=".pdf"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -154,12 +167,10 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
               <div>
                 <p className="font-medium text-sm">{selectedFile.name}</p>
                 <p className="text-xs text-gray-500">
-                  {fileUpload.formatFileSize(selectedFile.size)}
+                  {formatFileSize(selectedFile.size)}
                 </p>
               </div>
-              <span className="text-lg">
-                {fileUpload.getFileIcon(selectedFile.type)}
-              </span>
+              <FileText className="h-6 w-6 text-red-500" />
             </div>
           </div>
         )}
@@ -187,7 +198,7 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
           <Alert className="border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              File uploaded successfully!
+              Credit report uploaded successfully!
             </AlertDescription>
           </Alert>
         )}
@@ -196,9 +207,9 @@ export function FileUpload({ type, onUploadComplete }: FileUploadProps) {
         <Button
           onClick={handleUpload}
           disabled={!selectedFile || uploading}
-          className="w-full"
+          className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
         >
-          {uploading ? 'Uploading...' : 'Upload File'}
+          {uploading ? 'Uploading...' : 'Upload Credit Report'}
         </Button>
       </CardContent>
     </Card>

@@ -3,16 +3,30 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// For admin operations, use service role key
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
+// For admin operations, use service role key (server-side only)
+function createAdminClient() {
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (!supabaseServiceKey) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY not available - admin operations will be limited')
+    return null
   }
-})
+  
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
+
+export const supabaseAdmin = createAdminClient()
 
 // Database types (to be expanded as needed)
 export interface User {
@@ -30,6 +44,7 @@ export interface CreditReport {
   source: string
   reviewed: boolean
   uploaded_at: string
+  users?: User
 }
 
 export interface DisputeLetter {
@@ -41,6 +56,7 @@ export interface DisputeLetter {
   generated_by: 'ai' | 'manual'
   content: string
   created_at: string
+  users?: User
 }
 
 export interface AILog {

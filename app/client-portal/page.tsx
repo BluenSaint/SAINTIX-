@@ -1,10 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@/components/auth/auth-provider"
+import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { FileUpload } from "@/components/FileUpload"
+import { useCreditReports } from "@/hooks/useCreditReports"
+import { useDisputeLetters } from "@/hooks/useDisputeLetters"
+import { notifications } from "@/lib/database"
 import {
   FileText,
   Upload,
@@ -23,115 +29,83 @@ import {
   Star,
   RefreshCw,
   DollarSign,
+  Loader2,
 } from "lucide-react"
 
-// Mock client data with warm, friendly copy
-const clientData = {
-  name: "Sarah Johnson",
-  email: "sarah.johnson@email.com",
-  memberSince: "October 2023",
-  plan: "Advanced",
-  nextBilling: "February 15, 2024",
-  daysUntilBilling: 4,
-  currentScore: 687,
-  startingScore: 558,
-  targetScore: 750,
-  progress: 68,
+function ClientPortalDashboard() {
+  const { user, userProfile } = useAuth()
+  const { creditReports, loading: reportsLoading, fetchReports } = useCreditReports()
+  const { disputeLetters, loading: disputesLoading, fetchDisputes } = useDisputeLetters()
+  const [userNotifications, setUserNotifications] = useState([])
+  const [notificationsLoading, setNotificationsLoading] = useState(true)
 
-  // Progress Timeline
-  timeline: [
-    { step: "Report Uploaded", status: "completed", date: "Jan 15", description: "Your report is safely in our hands" },
-    {
-      step: "Review In Progress",
-      status: "current",
-      date: "Jan 18",
-      description: "Our experts are reviewing with care",
-      daysLeft: 2,
-    },
-    {
-      step: "Disputes Sent",
-      status: "upcoming",
-      date: "Jan 22",
-      description: "We'll send your disputes to all bureaus",
-    },
-    {
-      step: "Responses Received",
-      status: "upcoming",
-      date: "Feb 15",
-      description: "Tracking responses and celebrating wins",
-    },
-  ],
+  useEffect(() => {
+    if (user) {
+      fetchReports()
+      fetchDisputes()
+      loadNotifications()
+    }
+  }, [user, fetchReports, fetchDisputes])
 
-  // Dispute Summary
-  disputes: {
-    experian: { flagged: 3, inReview: 2, sent: 1, resolved: 0 },
-    equifax: { flagged: 4, inReview: 2, sent: 2, resolved: 0 },
-    transunion: { flagged: 2, inReview: 1, sent: 1, resolved: 0 },
-  },
-
-  // Uploaded Reports
-  reports: [
-    { name: "Credit Report - January 2024", date: "Jan 15, 2024", status: "Reviewed", type: "Credit Karma" },
-    { name: "Credit Report - December 2023", date: "Dec 20, 2023", status: "Reviewed", type: "IdentityIQ" },
-  ],
-
-  // Notifications
-  notifications: [
-    {
-      type: "success",
-      message: "Great news! We sent your Equifax dispute today",
-      time: "2 hours ago",
-      icon: "celebration",
-    },
-    {
-      type: "info",
-      message: "Your billing renews in 4 days - keep the magic going!",
-      time: "1 day ago",
-      icon: "billing",
-    },
-    {
-      type: "action",
-      message: "Ready for another report upload? It's been 30 days!",
-      time: "3 days ago",
-      icon: "upload",
-    },
-  ],
-
-  // Recent achievements
-  achievements: [
-    { title: "First Upload Complete", description: "You've taken the first step!", earned: true },
-    { title: "30-Day Champion", description: "You've been with us for a month!", earned: true },
-    { title: "Dispute Warrior", description: "Your first dispute has been sent", earned: false },
-  ],
-}
-
-export default function ClientPortalDashboard() {
-  const [selectedTab, setSelectedTab] = useState("overview")
-
-  const getTimelineStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-emerald-100 text-emerald-700 border-emerald-200"
-      case "current":
-        return "bg-orange-100 text-orange-700 border-orange-200"
-      case "upcoming":
-        return "bg-slate-100 text-slate-600 border-slate-200"
-      default:
-        return "bg-slate-100 text-slate-600 border-slate-200"
+  const loadNotifications = async () => {
+    if (!user) return
+    
+    try {
+      const data = await notifications.getUserNotifications(user.id)
+      setUserNotifications(data.slice(0, 5)) // Show latest 5
+    } catch (error) {
+      console.error('Error loading notifications:', error)
+    } finally {
+      setNotificationsLoading(false)
     }
   }
 
-  const getNotificationIcon = (iconType: string) => {
-    switch (iconType) {
-      case "celebration":
-        return <Star className="w-5 h-5 text-amber-500" />
-      case "billing":
-        return <DollarSign className="w-5 h-5 text-blue-500" />
-      case "upload":
-        return <Upload className="w-5 h-5 text-green-500" />
+  // Calculate stats from real data
+  const stats = {
+    totalReports: creditReports.length,
+    totalDisputes: disputeLetters.length,
+    pendingDisputes: disputeLetters.filter(d => d.status === 'pending').length,
+    resolvedDisputes: disputeLetters.filter(d => d.status === 'resolved').length,
+  }
+
+  // Mock score data (would come from credit reports analysis)
+  const scoreData = {
+    current: 687,
+    starting: 558,
+    target: 750,
+    progress: 68,
+  }
+
+  const getDisputeStatusColor = (status: string) => {
+    switch (status) {
+      case 'resolved':
+        return 'bg-emerald-100 text-emerald-700 border-emerald-200'
+      case 'pending':
+        return 'bg-orange-100 text-orange-700 border-orange-200'
+      case 'draft':
+        return 'bg-slate-100 text-slate-600 border-slate-200'
       default:
-        return <Bell className="w-5 h-5 text-slate-500" />
+        return 'bg-slate-100 text-slate-600 border-slate-200'
     }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  if (reportsLoading || disputesLoading || notificationsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50/30 to-yellow-50/20">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-600" />
+          <p className="text-slate-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -145,7 +119,7 @@ export default function ClientPortalDashboard() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-900">
-                Welcome back, {clientData.name.split(" ")[0]}!<span className="ml-2">✨</span>
+                Welcome back, {userProfile?.full_name?.split(" ")[0] || "Client"}!<span className="ml-2">✨</span>
               </h1>
               <p className="text-slate-600">Your credit journey is moving forward beautifully</p>
             </div>
@@ -159,7 +133,7 @@ export default function ClientPortalDashboard() {
                   <div>
                     <p className="text-sm text-emerald-700 font-medium">Score Improvement</p>
                     <p className="text-2xl font-bold text-emerald-800">
-                      +{clientData.currentScore - clientData.startingScore}
+                      +{scoreData.current - scoreData.starting}
                     </p>
                   </div>
                   <TrendingUp className="w-8 h-8 text-emerald-600" />
@@ -171,10 +145,10 @@ export default function ClientPortalDashboard() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-orange-700 font-medium">Current Score</p>
-                    <p className="text-2xl font-bold text-orange-800">{clientData.currentScore}</p>
+                    <p className="text-sm text-orange-700 font-medium">Credit Reports</p>
+                    <p className="text-2xl font-bold text-orange-800">{stats.totalReports}</p>
                   </div>
-                  <BarChart3 className="w-8 h-8 text-orange-600" />
+                  <FileText className="w-8 h-8 text-orange-600" />
                 </div>
               </CardContent>
             </Card>
@@ -183,10 +157,10 @@ export default function ClientPortalDashboard() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-700 font-medium">Goal Progress</p>
-                    <p className="text-2xl font-bold text-purple-800">{clientData.progress}%</p>
+                    <p className="text-sm text-purple-700 font-medium">Active Disputes</p>
+                    <p className="text-2xl font-bold text-purple-800">{stats.pendingDisputes}</p>
                   </div>
-                  <Target className="w-8 h-8 text-purple-600" />
+                  <Shield className="w-8 h-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
@@ -195,10 +169,10 @@ export default function ClientPortalDashboard() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-700 font-medium">Program Days</p>
-                    <p className="text-2xl font-bold text-blue-800">67</p>
+                    <p className="text-sm text-blue-700 font-medium">Resolved Items</p>
+                    <p className="text-2xl font-bold text-blue-800">{stats.resolvedDisputes}</p>
                   </div>
-                  <Calendar className="w-8 h-8 text-blue-600" />
+                  <CheckCircle className="w-8 h-8 text-blue-600" />
                 </div>
               </CardContent>
             </Card>
@@ -208,90 +182,115 @@ export default function ClientPortalDashboard() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Progress Timeline */}
+            {/* File Upload Section */}
             <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
-                    <Clock className="w-5 h-5 text-amber-600" />
+                    <Upload className="w-5 h-5 text-amber-600" />
                   </div>
-                  Your Journey Timeline
+                  Upload Credit Report
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {clientData.timeline.map((item, index) => (
-                    <div key={index} className="flex items-start gap-4">
-                      <div className="relative">
-                        <div
-                          className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center ${getTimelineStatusColor(item.status)}`}
-                        >
-                          {item.status === "completed" ? (
-                            <CheckCircle className="w-6 h-6" />
-                          ) : item.status === "current" ? (
-                            <RefreshCw className="w-6 h-6 animate-spin" />
-                          ) : (
-                            <Clock className="w-6 h-6" />
-                          )}
-                        </div>
-                        {index < clientData.timeline.length - 1 && (
-                          <div className="absolute top-12 left-6 w-0.5 h-12 bg-slate-200"></div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-slate-900">{item.step}</h3>
-                          <span className="text-sm text-slate-500">{item.date}</span>
-                        </div>
-                        <p className="text-sm text-slate-600 mb-1">{item.description}</p>
-                        {item.daysLeft && (
-                          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
-                            {item.daysLeft} days remaining
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <FileUpload
+                  onUploadComplete={(fileUrl) => {
+                    console.log('File uploaded:', fileUrl)
+                    fetchReports() // Refresh reports after upload
+                  }}
+                />
               </CardContent>
             </Card>
 
-            {/* Dispute Summary */}
+            {/* Credit Reports */}
+            <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
+                    <FileText className="w-5 h-5 text-amber-600" />
+                  </div>
+                  Your Credit Reports
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {creditReports.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-600">No credit reports uploaded yet</p>
+                    <p className="text-sm text-slate-500">Upload your first report to get started</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {creditReports.map((report) => (
+                      <div key={report.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-8 h-8 text-slate-600" />
+                          <div>
+                            <p className="font-medium text-slate-900">
+                              Credit Report - {formatDate(report.uploaded_at)}
+                            </p>
+                            <p className="text-sm text-slate-600">Source: {report.source}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge className={report.reviewed ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}>
+                            {report.reviewed ? 'Reviewed' : 'Pending Review'}
+                          </Badge>
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Dispute Letters */}
             <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
                     <Shield className="w-5 h-5 text-amber-600" />
                   </div>
-                  Dispute Progress
+                  Your Dispute Letters
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-3 gap-6">
-                  {Object.entries(clientData.disputes).map(([bureau, data]) => (
-                    <div key={bureau} className="bg-slate-50 rounded-2xl p-6">
-                      <h3 className="font-bold text-slate-900 mb-4 capitalize">{bureau}</h3>
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-600">Items flagged:</span>
-                          <span className="font-semibold text-slate-900">{data.flagged}</span>
+                {disputeLetters.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Shield className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-600">No disputes created yet</p>
+                    <p className="text-sm text-slate-500">We'll create disputes based on your credit report analysis</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {disputeLetters.map((dispute) => (
+                      <div key={dispute.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                        <div className="flex items-center gap-3">
+                          <Shield className="w-8 h-8 text-slate-600" />
+                          <div>
+                            <p className="font-medium text-slate-900">
+                              {dispute.credit_bureau} - {dispute.type}
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              Created: {formatDate(dispute.created_at)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-600">In review:</span>
-                          <span className="font-semibold text-orange-600">{data.inReview}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-600">Disputes sent:</span>
-                          <span className="font-semibold text-blue-600">{data.sent}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-600">Resolved:</span>
-                          <span className="font-semibold text-emerald-600">{data.resolved}</span>
+                        <div className="flex items-center gap-3">
+                          <Badge className={getDisputeStatusColor(dispute.status)}>
+                            {dispute.status}
+                          </Badge>
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -309,24 +308,24 @@ export default function ClientPortalDashboard() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="text-center p-6 bg-slate-50 rounded-2xl">
                     <p className="text-sm text-slate-600 mb-2">Starting Score</p>
-                    <p className="text-3xl font-bold text-slate-900 mb-2">{clientData.startingScore}</p>
+                    <p className="text-3xl font-bold text-slate-900 mb-2">{scoreData.starting}</p>
                     <p className="text-xs text-slate-500">When you joined</p>
                   </div>
                   <div className="text-center p-6 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl border border-emerald-200/50">
                     <p className="text-sm text-emerald-700 mb-2">Current Score</p>
-                    <p className="text-3xl font-bold text-emerald-800 mb-2">{clientData.currentScore}</p>
+                    <p className="text-3xl font-bold text-emerald-800 mb-2">{scoreData.current}</p>
                     <p className="text-xs text-emerald-600">
-                      +{clientData.currentScore - clientData.startingScore} improvement!
+                      +{scoreData.current - scoreData.starting} improvement!
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-6">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-600">Progress to goal ({clientData.targetScore})</span>
-                    <span className="font-semibold text-slate-900">{clientData.progress}%</span>
+                    <span className="text-slate-600">Progress to goal ({scoreData.target})</span>
+                    <span className="font-semibold text-slate-900">{scoreData.progress}%</span>
                   </div>
-                  <Progress value={clientData.progress} className="h-3 mb-4" />
+                  <Progress value={scoreData.progress} className="h-3 mb-4" />
                   <p className="text-sm text-slate-600 text-center">Keep going! You're doing amazing.</p>
                 </div>
 
@@ -349,117 +348,53 @@ export default function ClientPortalDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {clientData.notifications.map((notification, index) => (
-                    <div key={index} className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl">
-                      {getNotificationIcon(notification.icon)}
-                      <div className="flex-1">
-                        <p className="text-sm text-slate-900 font-medium mb-1">{notification.message}</p>
-                        <p className="text-xs text-slate-500">{notification.time}</p>
+                {userNotifications.length === 0 ? (
+                  <div className="text-center py-4">
+                    <Bell className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-600">No notifications yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userNotifications.map((notification) => (
+                      <div key={notification.id} className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl">
+                        <Bell className="w-5 h-5 text-amber-500 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm text-slate-900 font-medium mb-1">{notification.message}</p>
+                          <p className="text-xs text-slate-500">
+                            {formatDate(notification.created_at)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Billing Summary */}
+            {/* Account Info */}
             <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-lg">
                   <CreditCard className="w-5 h-5 text-amber-600" />
-                  Billing Summary
+                  Account Info
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-slate-600">Current Plan</p>
-                    <p className="font-semibold text-slate-900">{clientData.plan}</p>
+                    <p className="text-sm text-slate-600">Email</p>
+                    <p className="font-medium text-slate-900">{userProfile?.email}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-600">Next Billing</p>
-                    <p className="font-semibold text-slate-900">{clientData.nextBilling}</p>
+                    <p className="text-sm text-slate-600">Member Since</p>
+                    <p className="font-medium text-slate-900">
+                      {userProfile?.created_at ? formatDate(userProfile.created_at) : 'Recently'}
+                    </p>
                   </div>
-                  {clientData.daysUntilBilling <= 5 && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                      <p className="text-sm text-amber-800">
-                        Keep the magic going! Your plan renews in {clientData.daysUntilBilling} days.
-                      </p>
-                    </div>
-                  )}
-                  <Button variant="outline" className="w-full rounded-xl">
-                    Manage Billing
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Reports */}
-            <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-lg">
-                  <FileText className="w-5 h-5 text-amber-600" />
-                  Your Reports
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  {clientData.reports.map((report, index) => (
-                    <div key={index} className="p-3 bg-slate-50 rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium text-slate-900">{report.name}</p>
-                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
-                          {report.status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        {report.date} • {report.type}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <Button className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload New Report
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* AI Helper Placeholder */}
-            <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50 shadow-xl rounded-3xl">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-lg">
-                  <Sparkles className="w-5 h-5 text-purple-600" />
-                  Ask Alex, Your Credit Guide
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-purple-800 mb-4">
-                  Coming soon! Chat with our AI helper for instant answers.
-                </p>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-left justify-start text-xs border-purple-200 text-purple-700"
-                  >
-                    "What's a dispute?"
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-left justify-start text-xs border-purple-200 text-purple-700"
-                  >
-                    "When will I see changes?"
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-left justify-start text-xs border-purple-200 text-purple-700"
-                  >
-                    "How can I improve faster?"
-                  </Button>
+                  <div>
+                    <p className="text-sm text-slate-600">Plan</p>
+                    <p className="font-medium text-slate-900">Standard</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -469,3 +404,12 @@ export default function ClientPortalDashboard() {
     </div>
   )
 }
+
+export default function ClientPortalPage() {
+  return (
+    <ProtectedRoute requiredRole="client">
+      <ClientPortalDashboard />
+    </ProtectedRoute>
+  )
+}
+

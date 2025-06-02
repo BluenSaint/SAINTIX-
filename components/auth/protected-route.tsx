@@ -14,18 +14,18 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole, requiredPermission }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth()
+  const { user, userProfile, loading, hasPermission } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!loading && !user) {
       router.push("/login")
       return
     }
 
-    if (user && requiredRole && user.role !== requiredRole) {
+    if (user && userProfile && requiredRole && userProfile.role !== requiredRole) {
       // Redirect to appropriate dashboard based on user role
-      switch (user.role) {
+      switch (userProfile.role) {
         case "admin":
           router.push("/admin")
           break
@@ -41,18 +41,13 @@ export function ProtectedRoute({ children, requiredRole, requiredPermission }: P
       return
     }
 
-    if (
-      user &&
-      requiredPermission &&
-      !user.permissions.includes("*") &&
-      !user.permissions.includes(requiredPermission)
-    ) {
+    if (user && userProfile && requiredPermission && !hasPermission(requiredPermission)) {
       router.push("/unauthorized")
       return
     }
-  }, [user, isLoading, requiredRole, requiredPermission, router])
+  }, [user, userProfile, loading, requiredRole, requiredPermission, router, hasPermission])
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50/30 to-yellow-50/20">
         <div className="text-center">
@@ -63,9 +58,10 @@ export function ProtectedRoute({ children, requiredRole, requiredPermission }: P
     )
   }
 
-  if (!user) {
+  if (!user || !userProfile) {
     return null
   }
 
   return <>{children}</>
 }
+

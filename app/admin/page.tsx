@@ -1,9 +1,13 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { useAuth } from "@/components/auth/auth-provider"
+import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { admin, notifications } from "@/lib/database"
 import {
   Users,
   FileText,
@@ -17,9 +21,95 @@ import {
   Bell,
   Calendar,
   BarChart3,
+  Shield,
+  Upload,
+  Loader2,
 } from "lucide-react"
 
-export default function AdminDashboard() {
+function AdminDashboard() {
+  const { user, userProfile } = useAuth()
+  const [dashboardData, setDashboardData] = useState({
+    users: [],
+    creditReports: [],
+    disputeLetters: [],
+    loading: true
+  })
+
+  useEffect(() => {
+    if (user && userProfile?.role === 'admin') {
+      loadDashboardData()
+    }
+  }, [user, userProfile])
+
+  const loadDashboardData = async () => {
+    try {
+      const [users, creditReports, disputeLetters] = await Promise.all([
+        admin.getAllUsers(),
+        admin.getAllCreditReports(),
+        admin.getAllDisputeLetters()
+      ])
+
+      setDashboardData({
+        users,
+        creditReports,
+        disputeLetters,
+        loading: false
+      })
+    } catch (error) {
+      console.error('Error loading dashboard data:', error)
+      setDashboardData(prev => ({ ...prev, loading: false }))
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'resolved':
+        return 'bg-emerald-100 text-emerald-700'
+      case 'pending':
+        return 'bg-orange-100 text-orange-700'
+      case 'sent':
+        return 'bg-blue-100 text-blue-700'
+      case 'draft':
+        return 'bg-slate-100 text-slate-600'
+      default:
+        return 'bg-slate-100 text-slate-600'
+    }
+  }
+
+  // Calculate metrics from real data
+  const metrics = {
+    totalClients: dashboardData.users.filter(u => u.role === 'client').length,
+    totalReports: dashboardData.creditReports.length,
+    totalDisputes: dashboardData.disputeLetters.length,
+    pendingDisputes: dashboardData.disputeLetters.filter(d => d.status === 'pending').length,
+    resolvedDisputes: dashboardData.disputeLetters.filter(d => d.status === 'resolved').length,
+    unreviewed: dashboardData.creditReports.filter(r => !r.reviewed).length,
+    newThisWeek: dashboardData.users.filter(u => {
+      const weekAgo = new Date()
+      weekAgo.setDate(weekAgo.getDate() - 7)
+      return new Date(u.created_at) > weekAgo
+    }).length
+  }
+
+  if (dashboardData.loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-orange-600" />
+          <p className="text-slate-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -48,235 +138,190 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-900">2,847</div>
-            <p className="text-xs text-blue-600">+12% from last month</p>
+            <div className="text-2xl font-bold text-blue-900">{metrics.totalClients}</div>
+            <p className="text-xs text-blue-600 mt-1">
+              +{metrics.newThisWeek} new this week
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-700">Active Disputes</CardTitle>
-            <FileText className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium text-emerald-700">Credit Reports</CardTitle>
+            <FileText className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-900">1,234</div>
-            <p className="text-xs text-green-600">87% success rate</p>
+            <div className="text-2xl font-bold text-emerald-900">{metrics.totalReports}</div>
+            <p className="text-xs text-emerald-600 mt-1">
+              {metrics.unreviewed} pending review
+            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-700">Avg Score Increase</CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium text-orange-700">Active Disputes</CardTitle>
+            <Shield className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">+127</div>
-            <p className="text-xs text-orange-600">points in 90 days</p>
+            <div className="text-2xl font-bold text-orange-900">{metrics.pendingDisputes}</div>
+            <p className="text-xs text-orange-600 mt-1">
+              {metrics.resolvedDisputes} resolved
+            </p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-700">Monthly Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-purple-600" />
+            <CardTitle className="text-sm font-medium text-purple-700">Success Rate</CardTitle>
+            <TrendingUp className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">$487K</div>
-            <p className="text-xs text-purple-600">+23% growth</p>
+            <div className="text-2xl font-bold text-purple-900">
+              {metrics.totalDisputes > 0 ? Math.round((metrics.resolvedDisputes / metrics.totalDisputes) * 100) : 0}%
+            </div>
+            <p className="text-xs text-purple-600 mt-1">
+              Dispute resolution rate
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* AI Automation Status */}
-      <Card className="bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Zap className="w-5 h-5 text-orange-600" />
+      {/* Recent Activity */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Recent Credit Reports */}
+        <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
+                <FileText className="w-5 h-5 text-amber-600" />
               </div>
-              <div>
-                <CardTitle className="text-orange-900">Saintrix Takeover Status</CardTitle>
-                <p className="text-sm text-orange-700">AI automation is actively managing 1,847 clients</p>
-              </div>
-            </div>
-            <Badge className="bg-green-100 text-green-700 border-green-200">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-              Active
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-xl">
-              <div className="text-2xl font-bold text-slate-900">47</div>
-              <p className="text-sm text-slate-600">Letters generated today</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl">
-              <div className="text-2xl font-bold text-slate-900">23</div>
-              <p className="text-sm text-slate-600">Responses processed</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl">
-              <div className="text-2xl font-bold text-slate-900">156</div>
-              <p className="text-sm text-slate-600">Items flagged for review</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Activity & Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5 text-orange-600" />
-                Priority Alerts
-              </CardTitle>
-              <Button variant="ghost" size="sm" className="text-orange-600">
-                View All
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-start gap-3 p-3 bg-red-50 rounded-xl border border-red-200">
-              <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-red-900">Payment Failed</p>
-                <p className="text-sm text-red-700">Sarah Johnson's card was declined</p>
-                <p className="text-xs text-red-600 mt-1">2 minutes ago</p>
-              </div>
-              <Button size="sm" variant="outline" className="text-red-600 border-red-200">
-                Retry
-              </Button>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
-              <Clock className="w-5 h-5 text-amber-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-amber-900">Dispute Deadline</p>
-                <p className="text-sm text-amber-700">3 disputes approaching 30-day mark</p>
-                <p className="text-xs text-amber-600 mt-1">Due in 2 days</p>
-              </div>
-              <Button size="sm" variant="outline" className="text-amber-600 border-amber-200">
-                Review
-              </Button>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
-              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-green-900">Dispute Resolved</p>
-                <p className="text-sm text-green-700">Mike Chen - Experian item removed</p>
-                <p className="text-xs text-green-600 mt-1">1 hour ago</p>
-              </div>
-              <Button size="sm" variant="outline" className="text-green-600 border-green-200">
-                View
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-orange-600" />
-              Today's Schedule
+              Recent Credit Reports
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="font-medium text-slate-900">Bureau Response Review</p>
-                <p className="text-sm text-slate-600">Process 23 Equifax responses</p>
+          <CardContent>
+            {dashboardData.creditReports.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-600">No credit reports yet</p>
               </div>
-              <span className="text-sm text-slate-500">10:00 AM</span>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                {dashboardData.creditReports.slice(0, 5).map((report) => (
+                  <div key={report.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <Upload className="w-8 h-8 text-slate-600" />
+                      <div>
+                        <p className="font-medium text-slate-900">
+                          {report.users?.full_name || 'Unknown User'}
+                        </p>
+                        <p className="text-sm text-slate-600">
+                          {report.source} • {formatDate(report.uploaded_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className={report.reviewed ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}>
+                      {report.reviewed ? 'Reviewed' : 'Pending'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="font-medium text-slate-900">Client Check-in</p>
-                <p className="text-sm text-slate-600">Weekly progress calls</p>
+        {/* Recent Disputes */}
+        <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
+                <Shield className="w-5 h-5 text-amber-600" />
               </div>
-              <span className="text-sm text-slate-500">2:00 PM</span>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="font-medium text-slate-900">AI Model Review</p>
-                <p className="text-sm text-slate-600">Weekly performance analysis</p>
+              Recent Disputes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dashboardData.disputeLetters.length === 0 ? (
+              <div className="text-center py-8">
+                <Shield className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-600">No disputes yet</p>
               </div>
-              <span className="text-sm text-slate-500">4:00 PM</span>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                {dashboardData.disputeLetters.slice(0, 5).map((dispute) => (
+                  <div key={dispute.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-8 h-8 text-slate-600" />
+                      <div>
+                        <p className="font-medium text-slate-900">
+                          {dispute.users?.full_name || 'Unknown User'}
+                        </p>
+                        <p className="text-sm text-slate-600">
+                          {dispute.credit_bureau} • {dispute.type}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className={getStatusColor(dispute.status)}>
+                      {dispute.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Performance Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Dispute Success Rate</CardTitle>
-            <p className="text-sm text-slate-600">Last 30 days by bureau</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Experian</span>
-                <span className="font-medium">89%</span>
-              </div>
-              <Progress value={89} className="h-2" />
+      {/* Client Overview */}
+      <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
+              <Users className="w-5 h-5 text-amber-600" />
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Equifax</span>
-                <span className="font-medium">84%</span>
-              </div>
-              <Progress value={84} className="h-2" />
+            Client Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {dashboardData.users.filter(u => u.role === 'client').length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-600">No clients yet</p>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>TransUnion</span>
-                <span className="font-medium">91%</span>
-              </div>
-              <Progress value={91} className="h-2" />
+          ) : (
+            <div className="space-y-4">
+              {dashboardData.users.filter(u => u.role === 'client').slice(0, 10).map((client) => (
+                <div key={client.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">
+                        {client.full_name?.charAt(0) || 'U'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900">{client.full_name}</p>
+                      <p className="text-sm text-slate-600">{client.email}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-600">Joined</p>
+                    <p className="font-medium text-slate-900">{formatDate(client.created_at)}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Distribution</CardTitle>
-            <p className="text-sm text-slate-600">By plan tier</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Basic ($89)</span>
-                <span className="font-medium">1,247 clients</span>
-              </div>
-              <Progress value={44} className="h-2" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Advanced ($149)</span>
-                <span className="font-medium">1,156 clients</span>
-              </div>
-              <Progress value={41} className="h-2" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Elite ($249)</span>
-                <span className="font-medium">444 clients</span>
-              </div>
-              <Progress value={15} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
+
+export default function AdminDashboardPage() {
+  return (
+    <ProtectedRoute requiredRole="admin">
+      <AdminDashboard />
+    </ProtectedRoute>
+  )
+}
+
