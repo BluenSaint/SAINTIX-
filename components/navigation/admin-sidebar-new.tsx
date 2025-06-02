@@ -15,6 +15,7 @@ import {
   FileCheck,
   Bot,
   Sparkles,
+  Calendar,
 } from "lucide-react"
 
 import {
@@ -85,7 +86,7 @@ export function AdminSidebarNew() {
                 <SidebarMenuButton asChild isActive={isActive("/admin/clients")}>
                   <Link href="/admin/clients">
                     <Users className="h-5 w-5" />
-                    <span>Clients</span>
+                    <span>Client Overview</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -93,7 +94,7 @@ export function AdminSidebarNew() {
                 <SidebarMenuButton asChild isActive={isActive("/admin/disputes")}>
                   <Link href="/admin/disputes">
                     <FileText className="h-5 w-5" />
-                    <span>Disputes</span>
+                    <span>Disputes Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -114,9 +115,17 @@ export function AdminSidebarNew() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/admin/automation")}>
+                  <Link href="/admin/automation">
+                    <Zap className="h-5 w-5" />
+                    <span>Saintrix Takeover</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/admin/onboarding")}>
                   <Link href="/admin/onboarding">
-                    <Zap className="h-5 w-5" />
+                    <Bot className="h-5 w-5" />
                     <span>Smart Onboarding</span>
                   </Link>
                 </SidebarMenuButton>
@@ -129,11 +138,27 @@ export function AdminSidebarNew() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Communications</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive("/admin/notifications")}>
-                  <Link href="/admin/notifications">
+                <SidebarMenuButton asChild isActive={isActive("/admin/inbox")}>
+                  <Link href="/admin/inbox">
                     <Bell className="h-5 w-5" />
-                    <span>Notifications</span>
+                    <span>Inbox & Notifications</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/admin/calendar")}>
+                  <Link href="/admin/calendar">
+                    <Calendar className="h-5 w-5" />
+                    <span>Calendar & Deadlines</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
