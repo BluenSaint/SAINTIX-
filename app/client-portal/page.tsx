@@ -4,471 +4,466 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
 import {
   FileText,
   Upload,
   Bell,
-  Settings,
   CreditCard,
   Target,
   Calendar,
   BarChart3,
-  Zap,
   ArrowRight,
-  Search,
-  Home,
-  PieChart,
-  HelpCircle,
-  Phone,
-  FileCodeIcon as FileContract,
-  ArrowUp,
-  FileIcon as FilePdf,
+  Heart,
+  Sparkles,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  Shield,
+  Star,
+  RefreshCw,
+  DollarSign,
 } from "lucide-react"
 
-// Mock client data
+// Mock client data with warm, friendly copy
 const clientData = {
   name: "Sarah Johnson",
   email: "sarah.johnson@email.com",
-  phone: "(555) 123-4567",
   memberSince: "October 2023",
   plan: "Advanced",
   nextBilling: "February 15, 2024",
-  totalPaid: "$540",
-  creditScores: {
-    experian: { current: 687, previous: 642, lastUpdated: "2 days ago" },
-    equifax: { current: 693, previous: 651, lastUpdated: "3 days ago" },
-    transunion: { current: 679, previous: 638, lastUpdated: "1 day ago" },
-  },
-  scoreHistory: [
-    { month: "Oct", score: 558 },
-    { month: "Nov", score: 602 },
-    { month: "Dec", score: 645 },
-    { month: "Jan", score: 686 },
-  ],
-  goals: {
-    targetScore: 750,
-    targetDate: "2024-06-01",
-    currentProgress: 68,
-  },
-  disputes: [
+  daysUntilBilling: 4,
+  currentScore: 687,
+  startingScore: 558,
+  targetScore: 750,
+  progress: 68,
+
+  // Progress Timeline
+  timeline: [
+    { step: "Report Uploaded", status: "completed", date: "Jan 15", description: "Your report is safely in our hands" },
     {
-      id: 1,
-      account: "Capital One Collection",
-      bureau: "Experian",
-      status: "In Review",
-      filed: "2024-01-15",
-      type: "Collection Account",
-      amount: "$1,234",
-      priority: "high",
+      step: "Review In Progress",
+      status: "current",
+      date: "Jan 18",
+      description: "Our experts are reviewing with care",
+      daysLeft: 2,
     },
     {
-      id: 2,
-      account: "Medical Collection - $234",
-      bureau: "Equifax",
-      status: "Pending Response",
-      filed: "2024-01-12",
-      type: "Medical Collection",
-      amount: "$234",
-      priority: "medium",
+      step: "Disputes Sent",
+      status: "upcoming",
+      date: "Jan 22",
+      description: "We'll send your disputes to all bureaus",
+    },
+    {
+      step: "Responses Received",
+      status: "upcoming",
+      date: "Feb 15",
+      description: "Tracking responses and celebrating wins",
     },
   ],
-  recentActivity: [
+
+  // Dispute Summary
+  disputes: {
+    experian: { flagged: 3, inReview: 2, sent: 1, resolved: 0 },
+    equifax: { flagged: 4, inReview: 2, sent: 2, resolved: 0 },
+    transunion: { flagged: 2, inReview: 1, sent: 1, resolved: 0 },
+  },
+
+  // Uploaded Reports
+  reports: [
+    { name: "Credit Report - January 2024", date: "Jan 15, 2024", status: "Reviewed", type: "Credit Karma" },
+    { name: "Credit Report - December 2023", date: "Dec 20, 2023", status: "Reviewed", type: "IdentityIQ" },
+  ],
+
+  // Notifications
+  notifications: [
     {
-      date: "2024-01-20",
-      action: "Dispute filed for Capital One Collection",
-      description: "Dispute submitted to all three credit bureaus",
-      type: "dispute",
-      impact: "+15 pts",
+      type: "success",
+      message: "Great news! We sent your Equifax dispute today",
+      time: "2 hours ago",
+      icon: "celebration",
     },
     {
-      date: "2024-01-18",
-      action: "Credit score updated - Experian +5 points",
-      description: "Positive change from previous month",
-      type: "score",
-      impact: "+5 pts",
+      type: "info",
+      message: "Your billing renews in 4 days - keep the magic going!",
+      time: "1 day ago",
+      icon: "billing",
     },
     {
-      date: "2024-01-15",
-      action: "Document uploaded: Bank statement",
-      description: "Statement for account verification",
-      type: "document",
-      impact: null,
+      type: "action",
+      message: "Ready for another report upload? It's been 30 days!",
+      time: "3 days ago",
+      icon: "upload",
     },
-    {
-      date: "2024-01-12",
-      action: "Consultation call scheduled",
-      description: "30 minute session with credit specialist",
-      type: "appointment",
-      impact: null,
-    },
+  ],
+
+  // Recent achievements
+  achievements: [
+    { title: "First Upload Complete", description: "You've taken the first step!", earned: true },
+    { title: "30-Day Champion", description: "You've been with us for a month!", earned: true },
+    { title: "Dispute Warrior", description: "Your first dispute has been sent", earned: false },
   ],
 }
 
-export default function ClientPortal() {
-  const [activeNav, setActiveNav] = useState("dashboard")
+export default function ClientPortalDashboard() {
+  const [selectedTab, setSelectedTab] = useState("overview")
 
-  const averageScore = Math.round(
-    (clientData.creditScores.experian.current +
-      clientData.creditScores.equifax.current +
-      clientData.creditScores.transunion.current) /
-      3,
-  )
-
-  const totalIncrease =
-    clientData.creditScores.experian.current -
-    clientData.creditScores.experian.previous +
-    (clientData.creditScores.equifax.current - clientData.creditScores.equifax.previous) +
-    (clientData.creditScores.transunion.current - clientData.creditScores.transunion.previous)
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "dispute":
-        return <FileContract className="w-5 h-5" />
-      case "score":
-        return <ArrowUp className="w-5 h-5" />
-      case "document":
-        return <FilePdf className="w-5 h-5" />
-      case "appointment":
-        return <Phone className="w-5 h-5" />
+  const getTimelineStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-emerald-100 text-emerald-700 border-emerald-200"
+      case "current":
+        return "bg-orange-100 text-orange-700 border-orange-200"
+      case "upcoming":
+        return "bg-slate-100 text-slate-600 border-slate-200"
       default:
-        return <FileText className="w-5 h-5" />
+        return "bg-slate-100 text-slate-600 border-slate-200"
     }
   }
 
-  const getActivityIconBg = (type: string) => {
-    switch (type) {
-      case "dispute":
-        return "bg-red-100 text-red-600"
-      case "score":
-        return "bg-emerald-100 text-emerald-600"
-      case "document":
-        return "bg-blue-100 text-blue-600"
-      case "appointment":
-        return "bg-amber-100 text-amber-600"
+  const getNotificationIcon = (iconType: string) => {
+    switch (iconType) {
+      case "celebration":
+        return <Star className="w-5 h-5 text-amber-500" />
+      case "billing":
+        return <DollarSign className="w-5 h-5 text-blue-500" />
+      case "upload":
+        return <Upload className="w-5 h-5 text-green-500" />
       default:
-        return "bg-slate-100 text-slate-600"
+        return <Bell className="w-5 h-5 text-slate-500" />
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50/30 to-yellow-50/20 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-gradient-to-b from-slate-800 to-slate-900 text-white fixed h-full z-50 shadow-2xl">
-        <div className="p-6 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50/30 to-yellow-50/20">
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Welcome Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl flex items-center justify-center">
+              <Heart className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-orange-300 to-amber-300 bg-clip-text text-transparent">
-              SAINTRIX
-            </h1>
-          </div>
-        </div>
-
-        <nav className="p-4">
-          <ul className="space-y-2">
-            {[
-              { id: "dashboard", icon: Home, label: "Dashboard" },
-              { id: "scores", icon: CreditCard, label: "Credit Scores" },
-              { id: "disputes", icon: FileText, label: "Disputes" },
-              { id: "reports", icon: PieChart, label: "Reports" },
-              { id: "documents", icon: Upload, label: "Documents" },
-              { id: "settings", icon: Settings, label: "Settings" },
-              { id: "support", icon: HelpCircle, label: "Support" },
-            ].map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => setActiveNav(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                    activeNav === item.id
-                      ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
-                      : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        {/* Header */}
-        <div className="bg-white/90 backdrop-blur-xl border-b border-orange-100/50 shadow-sm sticky top-0 z-40">
-          <div className="px-8 py-5">
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <Input placeholder="Search..." className="pl-12 w-80 bg-slate-50/50 border-slate-200 rounded-full" />
-              </div>
-
-              <div className="flex items-center gap-6">
-                <Button variant="ghost" size="sm" className="relative">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full"></span>
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <Settings className="w-5 h-5" />
-                </Button>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-sm">SJ</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{clientData.name}</p>
-                    <p className="text-xs text-slate-500">{clientData.plan} Plan</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Dashboard Content */}
-        <div className="p-8">
-          {/* Welcome Section */}
-          <div className="mb-8 relative">
-            {/* Decorative background elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-orange-200/30 to-amber-200/30 rounded-full blur-3xl"></div>
-              <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-amber-200/30 to-yellow-200/30 rounded-full blur-3xl"></div>
-            </div>
-
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-4">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                  Good morning, {clientData.name.split(" ")[0]}! 👋
-                </h1>
-              </div>
-              <p className="text-xl text-slate-700">
-                Your credit score improved by <span className="font-bold text-orange-600">+{totalIncrease} points</span>{" "}
-                this month. Keep up the great work!
-              </p>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-orange-200/50 rounded-2xl">
-                    <BarChart3 className="w-6 h-6 text-orange-700" />
-                  </div>
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
-                    <ArrowUp className="w-3 h-3 mr-1" />+{totalIncrease}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-orange-700 font-semibold text-sm mb-1">Average Score</p>
-                  <p className="text-4xl font-bold text-orange-800">{averageScore}</p>
-                  <p className="text-xs text-orange-600 mt-1">+{totalIncrease} this month</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl animate-pulse">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-purple-200/50 rounded-2xl">
-                    <Target className="w-6 h-6 text-purple-700" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-purple-700 font-semibold text-sm mb-1">Goal Progress</p>
-                  <p className="text-4xl font-bold text-purple-800">{clientData.goals.currentProgress}%</p>
-                  <p className="text-xs text-purple-600 mt-1">Target: {clientData.goals.targetScore}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-red-50 to-red-100/50 border-red-200/50 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-red-200/50 rounded-2xl">
-                    <FileContract className="w-6 h-6 text-red-700" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-red-700 font-semibold text-sm mb-1">Active Disputes</p>
-                  <p className="text-4xl font-bold text-red-800">{clientData.disputes.length}</p>
-                  <p className="text-xs text-red-600 mt-1">2 in review</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-emerald-200/50 rounded-2xl">
-                    <Calendar className="w-6 h-6 text-emerald-700" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-emerald-700 font-semibold text-sm mb-1">Program Days</p>
-                  <p className="text-4xl font-bold text-emerald-800">67</p>
-                  <p className="text-xs text-emerald-600 mt-1">Advanced plan</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Credit Score Section */}
-          <div className="grid lg:grid-cols-3 gap-8 mb-8">
-            {/* Score Progress Chart */}
-            <div className="lg:col-span-2">
-              <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-3 text-xl">
-                      <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
-                        <BarChart3 className="w-5 h-5 text-amber-600" />
-                      </div>
-                      Credit Score Progress
-                    </CardTitle>
-                    <Button variant="outline" size="sm" className="rounded-xl">
-                      View Report
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Simple chart visualization */}
-                  <div className="relative bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 border border-slate-100 mb-6">
-                    <div className="flex items-end justify-between h-48 gap-4">
-                      {clientData.scoreHistory.map((data, index) => (
-                        <div key={data.month} className="flex-1 flex flex-col items-center">
-                          <div
-                            className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t-lg mb-2 transition-all duration-1000 ease-out"
-                            style={{ height: `${((data.score - 500) / 300) * 100}%` }}
-                          ></div>
-                          <span className="text-sm font-medium text-slate-700">{data.month}</span>
-                          <span className="text-xs text-slate-500">{data.score}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Bureau Scores */}
             <div>
-              <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl">Bureau Scores</CardTitle>
-                    <Button variant="ghost" size="sm" className="text-orange-600">
-                      Details
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 rounded-2xl border border-blue-200/50 hover:shadow-lg transition-all duration-300">
-                      <div className="text-center">
-                        <p className="text-sm text-blue-700 font-medium mb-2">Experian</p>
-                        <p className="text-3xl font-bold text-blue-800 mb-1">
-                          {clientData.creditScores.experian.current}
-                        </p>
-                        <div className="flex items-center justify-center text-emerald-600 text-sm font-medium mb-2">
-                          <ArrowUp className="w-3 h-3 mr-1" />+
-                          {clientData.creditScores.experian.current - clientData.creditScores.experian.previous} pts
-                        </div>
-                        <p className="text-xs text-blue-600">Updated {clientData.creditScores.experian.lastUpdated}</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 rounded-2xl border border-emerald-200/50 hover:shadow-lg transition-all duration-300">
-                      <div className="text-center">
-                        <p className="text-sm text-emerald-700 font-medium mb-2">Equifax</p>
-                        <p className="text-3xl font-bold text-emerald-800 mb-1">
-                          {clientData.creditScores.equifax.current}
-                        </p>
-                        <div className="flex items-center justify-center text-emerald-600 text-sm font-medium mb-2">
-                          <ArrowUp className="w-3 h-3 mr-1" />+
-                          {clientData.creditScores.equifax.current - clientData.creditScores.equifax.previous} pts
-                        </div>
-                        <p className="text-xs text-emerald-600">
-                          Updated {clientData.creditScores.equifax.lastUpdated}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 rounded-2xl border border-purple-200/50 hover:shadow-lg transition-all duration-300">
-                      <div className="text-center">
-                        <p className="text-sm text-purple-700 font-medium mb-2">TransUnion</p>
-                        <p className="text-3xl font-bold text-purple-800 mb-1">
-                          {clientData.creditScores.transunion.current}
-                        </p>
-                        <div className="flex items-center justify-center text-emerald-600 text-sm font-medium mb-2">
-                          <ArrowUp className="w-3 h-3 mr-1" />+
-                          {clientData.creditScores.transunion.current - clientData.creditScores.transunion.previous} pts
-                        </div>
-                        <p className="text-xs text-purple-600">
-                          Updated {clientData.creditScores.transunion.lastUpdated}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <h1 className="text-3xl font-bold text-slate-900">
+                Welcome back, {clientData.name.split(" ")[0]}!<span className="ml-2">✨</span>
+              </h1>
+              <p className="text-slate-600">Your credit journey is moving forward beautifully</p>
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50 shadow-sm rounded-2xl">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-emerald-700 font-medium">Score Improvement</p>
+                    <p className="text-2xl font-bold text-emerald-800">
+                      +{clientData.currentScore - clientData.startingScore}
+                    </p>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-emerald-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50 shadow-sm rounded-2xl">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-orange-700 font-medium">Current Score</p>
+                    <p className="text-2xl font-bold text-orange-800">{clientData.currentScore}</p>
+                  </div>
+                  <BarChart3 className="w-8 h-8 text-orange-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50 shadow-sm rounded-2xl">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-purple-700 font-medium">Goal Progress</p>
+                    <p className="text-2xl font-bold text-purple-800">{clientData.progress}%</p>
+                  </div>
+                  <Target className="w-8 h-8 text-purple-600" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50 shadow-sm rounded-2xl">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-700 font-medium">Program Days</p>
+                    <p className="text-2xl font-bold text-blue-800">67</p>
+                  </div>
+                  <Calendar className="w-8 h-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Progress Timeline */}
+            <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
-                    <Zap className="w-5 h-5 text-amber-600" />
+                    <Clock className="w-5 h-5 text-amber-600" />
                   </div>
-                  Recent Activity
+                  Your Journey Timeline
                 </CardTitle>
-                <Button variant="ghost" className="text-orange-600">
-                  View All
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {clientData.recentActivity.map((activity, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-4 p-6 bg-gradient-to-r from-slate-50 to-white rounded-2xl border border-slate-100 hover:shadow-md transition-all duration-300 relative"
-                  >
-                    {/* Timeline connector */}
-                    {index < clientData.recentActivity.length - 1 && (
-                      <div className="absolute left-8 top-16 w-0.5 h-12 bg-slate-200"></div>
-                    )}
-
-                    <div className={`p-3 rounded-2xl ${getActivityIconBg(activity.type)} relative z-10`}>
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-slate-900">{activity.action}</h4>
-                        {activity.impact && (
-                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
-                            {activity.impact}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {clientData.timeline.map((item, index) => (
+                    <div key={index} className="flex items-start gap-4">
+                      <div className="relative">
+                        <div
+                          className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center ${getTimelineStatusColor(item.status)}`}
+                        >
+                          {item.status === "completed" ? (
+                            <CheckCircle className="w-6 h-6" />
+                          ) : item.status === "current" ? (
+                            <RefreshCw className="w-6 h-6 animate-spin" />
+                          ) : (
+                            <Clock className="w-6 h-6" />
+                          )}
+                        </div>
+                        {index < clientData.timeline.length - 1 && (
+                          <div className="absolute top-12 left-6 w-0.5 h-12 bg-slate-200"></div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-slate-900">{item.step}</h3>
+                          <span className="text-sm text-slate-500">{item.date}</span>
+                        </div>
+                        <p className="text-sm text-slate-600 mb-1">{item.description}</p>
+                        {item.daysLeft && (
+                          <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
+                            {item.daysLeft} days remaining
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-slate-600 mb-2">{activity.description}</p>
-                      <p className="text-xs text-slate-500">{activity.date}</p>
                     </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Dispute Summary */}
+            <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
+                    <Shield className="w-5 h-5 text-amber-600" />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  Dispute Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-6">
+                  {Object.entries(clientData.disputes).map(([bureau, data]) => (
+                    <div key={bureau} className="bg-slate-50 rounded-2xl p-6">
+                      <h3 className="font-bold text-slate-900 mb-4 capitalize">{bureau}</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Items flagged:</span>
+                          <span className="font-semibold text-slate-900">{data.flagged}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">In review:</span>
+                          <span className="font-semibold text-orange-600">{data.inReview}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Disputes sent:</span>
+                          <span className="font-semibold text-blue-600">{data.sent}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Resolved:</span>
+                          <span className="font-semibold text-emerald-600">{data.resolved}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Score Tracking */}
+            <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl">
+                    <TrendingUp className="w-5 h-5 text-amber-600" />
+                  </div>
+                  Track Your Improvement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="text-center p-6 bg-slate-50 rounded-2xl">
+                    <p className="text-sm text-slate-600 mb-2">Starting Score</p>
+                    <p className="text-3xl font-bold text-slate-900 mb-2">{clientData.startingScore}</p>
+                    <p className="text-xs text-slate-500">When you joined</p>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl border border-emerald-200/50">
+                    <p className="text-sm text-emerald-700 mb-2">Current Score</p>
+                    <p className="text-3xl font-bold text-emerald-800 mb-2">{clientData.currentScore}</p>
+                    <p className="text-xs text-emerald-600">
+                      +{clientData.currentScore - clientData.startingScore} improvement!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-slate-600">Progress to goal ({clientData.targetScore})</span>
+                    <span className="font-semibold text-slate-900">{clientData.progress}%</span>
+                  </div>
+                  <Progress value={clientData.progress} className="h-3 mb-4" />
+                  <p className="text-sm text-slate-600 text-center">Keep going! You're doing amazing.</p>
+                </div>
+
+                <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl">
+                  Update My Score
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Notifications */}
+            <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <Bell className="w-5 h-5 text-amber-600" />
+                  Latest Updates
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {clientData.notifications.map((notification, index) => (
+                    <div key={index} className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl">
+                      {getNotificationIcon(notification.icon)}
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-900 font-medium mb-1">{notification.message}</p>
+                        <p className="text-xs text-slate-500">{notification.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Billing Summary */}
+            <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <CreditCard className="w-5 h-5 text-amber-600" />
+                  Billing Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-slate-600">Current Plan</p>
+                    <p className="font-semibold text-slate-900">{clientData.plan}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-600">Next Billing</p>
+                    <p className="font-semibold text-slate-900">{clientData.nextBilling}</p>
+                  </div>
+                  {clientData.daysUntilBilling <= 5 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                      <p className="text-sm text-amber-800">
+                        Keep the magic going! Your plan renews in {clientData.daysUntilBilling} days.
+                      </p>
+                    </div>
+                  )}
+                  <Button variant="outline" className="w-full rounded-xl">
+                    Manage Billing
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Reports */}
+            <Card className="bg-white/80 backdrop-blur-sm border border-gray-100/50 shadow-xl rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <FileText className="w-5 h-5 text-amber-600" />
+                  Your Reports
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  {clientData.reports.map((report, index) => (
+                    <div key={index} className="p-3 bg-slate-50 rounded-xl">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium text-slate-900">{report.name}</p>
+                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
+                          {report.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {report.date} • {report.type}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <Button className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload New Report
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* AI Helper Placeholder */}
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50 shadow-xl rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  Ask Alex, Your Credit Guide
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-purple-800 mb-4">
+                  Coming soon! Chat with our AI helper for instant answers.
+                </p>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-left justify-start text-xs border-purple-200 text-purple-700"
+                  >
+                    "What's a dispute?"
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-left justify-start text-xs border-purple-200 text-purple-700"
+                  >
+                    "When will I see changes?"
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-left justify-start text-xs border-purple-200 text-purple-700"
+                  >
+                    "How can I improve faster?"
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
