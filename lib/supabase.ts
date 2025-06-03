@@ -1,21 +1,31 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+if (!supabaseUrl) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Environment-aware client configuration
+const supabaseKey = process.env.NODE_ENV === 'production'
+  ? process.env.SUPABASE_SERVICE_ROLE_KEY!
+  : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// For admin operations, use service role key (server-side only)
+if (!supabaseKey) {
+  throw new Error(`Missing Supabase key for ${process.env.NODE_ENV} environment`)
+}
+
+// Main Supabase client with environment-aware key selection
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// For admin operations, create a separate client with service role key when available
 function createAdminClient() {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   
   if (!supabaseServiceKey) {
-    console.warn('SUPABASE_SERVICE_ROLE_KEY not available - admin operations will be limited')
-    return null
+    // In development or when service key is not available, return the main client
+    console.warn('SUPABASE_SERVICE_ROLE_KEY not available - using main client for admin operations')
+    return supabase
   }
   
   return createClient(supabaseUrl, supabaseServiceKey, {
