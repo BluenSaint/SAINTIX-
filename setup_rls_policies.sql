@@ -165,4 +165,3 @@ CREATE POLICY "Admins can access all users" ON users
             AND users.role = 'admin'
         )
     );
-

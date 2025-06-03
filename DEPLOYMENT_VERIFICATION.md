@@ -66,7 +66,7 @@
 4. Test API endpoints with live data
 
 ### Verification Commands
-```bash
+\`\`\`bash
 # Check table status
 python3 check_schema.py
 
@@ -75,7 +75,7 @@ npm run build
 
 # Check git status
 git status
-```
+\`\`\`
 
 ## 🚨 Critical Notes
 
@@ -91,4 +91,3 @@ git status
 2. **Verify table creation** with schema check script
 3. **Test frontend integration** with live backend
 4. **Deploy to Vercel** with environment variables
-

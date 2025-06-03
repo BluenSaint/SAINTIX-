@@ -173,4 +173,3 @@ Date: ${currentDate}
 
   return templates[disputeType as keyof typeof templates] || templates['inaccurate_information']
 }
-

@@ -106,4 +106,3 @@ export interface ClientActivityLog {
   user_agent?: string
   created_at: string
 }
-

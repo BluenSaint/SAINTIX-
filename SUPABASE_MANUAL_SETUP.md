@@ -5,7 +5,7 @@
 The following tables need to be created manually in the Supabase dashboard:
 
 ### 1. admin_notes Table
-```sql
+\`\`\`sql
 CREATE TABLE admin_notes (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -16,10 +16,10 @@ CREATE TABLE admin_notes (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-```
+\`\`\`
 
 ### 2. client_activity_log Table
-```sql
+\`\`\`sql
 CREATE TABLE client_activity_log (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -30,7 +30,7 @@ CREATE TABLE client_activity_log (
     user_agent TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-```
+\`\`\`
 
 ## Required Manual Actions in Supabase Dashboard
 
@@ -63,9 +63,8 @@ Execute the trigger script: `setup_database_triggers.sql`
 ## Verification Commands
 
 After manual setup, run this to verify:
-```bash
+\`\`\`bash
 python3 check_schema.py
-```
+\`\`\`
 
 All tables should show as ✅ EXISTS
-

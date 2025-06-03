@@ -54,4 +54,3 @@ CREATE POLICY "Admins can access all files" ON storage.objects
 
 -- Enable RLS on storage.objects if not already enabled
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
