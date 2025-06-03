@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createApiClient } from '@/lib/supabase'
+import { createApiClient } from '@/lib/supabase-admin'
 
 // Get User Dashboard Statistics
 export async function GET(request: NextRequest) {

@@ -3,9 +3,10 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { safeSupabase } from '@/lib/supabase'
 import { auth } from '@/lib/database'
 import type { User as UserProfile } from '@/lib/supabase'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 interface AuthContextType {
   user: User | null
@@ -27,30 +28,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadUserProfile(session.user.id)
-      } else {
+    // Get initial session with error handling
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await safeSupabase.auth.getSession()
+        if (error) {
+          console.error('Error getting session:', error)
+          setLoading(false)
+          return
+        }
+        
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          await loadUserProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
         setLoading(false)
       }
-    })
+    }
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await loadUserProfile(session.user.id)
-      } else {
-        setUserProfile(null)
-        setLoading(false)
-      }
-    })
+    initializeAuth()
 
-    return () => subscription.unsubscribe()
+    // Listen for auth changes with error handling
+    try {
+      const {
+        data: { subscription },
+      } = safeSupabase.auth.onAuthStateChange(async (event, session) => {
+        try {
+          setUser(session?.user ?? null)
+          if (session?.user) {
+            await loadUserProfile(session.user.id)
+          } else {
+            setUserProfile(null)
+            setLoading(false)
+          }
+        } catch (error) {
+          console.error('Error in auth state change:', error)
+          setLoading(false)
+        }
+      })
+
+      return () => subscription.unsubscribe()
+    } catch (error) {
+      console.error('Error setting up auth listener:', error)
+      setLoading(false)
+    }
   }, [])
 
   const loadUserProfile = async (userId: string) => {
@@ -58,14 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profile = await auth.getUserProfile(userId)
       setUserProfile(profile)
       
-      // Redirect based on role after successful profile load
-      if (profile.role === 'admin') {
-        router.push('/admin')
-      } else if (profile.role === 'client') {
-        router.push('/client-portal')
-      }
+      // Note: Removed automatic redirection to prevent navigation issues
+      // Components can handle navigation based on user role as needed
     } catch (error) {
       console.error('Error loading user profile:', error)
+      // Don't throw error, just log it and continue
+      setUserProfile(null)
     } finally {
       setLoading(false)
     }
@@ -136,13 +159,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     hasPermission,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <ErrorBoundary>
+      <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    </ErrorBoundary>
+  )
+}
+
+// Safe AuthProvider wrapper that handles initialization errors
+export function SafeAuthProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <ErrorBoundary fallback={({ error, resetError }) => (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Error</h1>
+          <p className="text-gray-600 mb-6">
+            There was a problem initializing the authentication system. This may be due to configuration issues.
+          </p>
+          <div className="space-y-3">
+            <button 
+              onClick={resetError}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
+    )}>
+      <AuthProvider>{children}</AuthProvider>
+    </ErrorBoundary>
+  )
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+  try {
+    const context = useContext(AuthContext)
+    if (context === undefined) {
+      throw new Error('useAuth must be used within an AuthProvider')
+    }
+    return context
+  } catch (error) {
+    console.error('Error in useAuth hook:', error)
+    // Return safe defaults to prevent crashes
+    return {
+      user: null,
+      userProfile: null,
+      loading: false,
+      signIn: async () => { throw new Error('Authentication not available') },
+      signUp: async () => { throw new Error('Authentication not available') },
+      signOut: async () => { throw new Error('Authentication not available') },
+      refreshProfile: async () => {},
+      hasPermission: () => false,
+    }
   }
-  return context
 }

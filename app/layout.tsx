@@ -1,7 +1,9 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { AuthProvider } from "@/components/auth/auth-provider"
+import { SafeAuthProvider } from "@/components/auth/auth-provider"
 import { Toaster } from "@/components/ui/toaster"
+import ErrorBoundary from "@/components/ErrorBoundary"
+import { DebugPanel } from "@/lib/error-logger"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -18,10 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <ErrorBoundary>
+          <SafeAuthProvider>
+            {children}
+            <Toaster />
+            <DebugPanel />
+          </SafeAuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )

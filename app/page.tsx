@@ -27,7 +27,7 @@ import {
 import Link from "next/link"
 
 export default function HomePage() {
-  const { user } = useAuth()
+  const { user, userProfile } = useAuth()
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
   const [creditInsurance, setCreditInsurance] = useState(false)
 
@@ -135,12 +135,12 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-6">
-              {user ? (
+              {user && userProfile ? (
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600">Welcome, {user.name}</span>
-                  <Link href={user.role === "admin" ? "/admin" : "/client-portal"}>
+                  <span className="text-sm text-gray-600">Welcome, {userProfile.full_name || user.email}</span>
+                  <Link href={userProfile.role === "admin" ? "/admin" : "/client-portal"}>
                     <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-sm">
-                      Go to {user.role === "admin" ? "Admin" : "Portal"}
+                      Go to {userProfile.role === "admin" ? "Admin" : "Portal"}
                     </Button>
                   </Link>
                 </div>

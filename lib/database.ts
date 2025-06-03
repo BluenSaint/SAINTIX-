@@ -1,11 +1,12 @@
-import { supabase, supabaseAdmin } from './supabase'
+import { safeSupabase } from './supabase'
+import { supabaseAdmin } from './supabase-admin'
 import type { User, CreditReport, DisputeLetter, Notification, Payment, AILog } from './supabase'
 
 // Authentication helpers
 export const auth = {
   // Sign up new user
   async signUp(email: string, password: string, fullName: string) {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await safeSupabase.auth.signUp({
       email,
       password,
       options: {
@@ -36,7 +37,7 @@ export const auth = {
 
   // Sign in user
   async signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await safeSupabase.auth.signInWithPassword({
       email,
       password
     })
@@ -47,13 +48,13 @@ export const auth = {
 
   // Sign out user
   async signOut() {
-    const { error } = await supabase.auth.signOut()
+    const { error } = await safeSupabase.auth.signOut()
     if (error) throw error
   },
 
   // Get current user
   async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await safeSupabase.auth.getUser()
     return user
   },
 

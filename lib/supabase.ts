@@ -1,121 +1,124 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// Environment validation and configuration
+// Environment validation for frontend-safe configuration
 interface SupabaseConfig {
   url: string
   anonKey: string
-  serviceKey?: string
   isProduction: boolean
 }
 
 function validateAndGetConfig(): SupabaseConfig {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const isProduction = process.env.NODE_ENV === 'production'
 
-  // Critical validation - these are always required
+  // Critical validation - these are always required for frontend
   if (!url) {
+    console.error('❌ NEXT_PUBLIC_SUPABASE_URL is missing')
     throw new Error(
       'NEXT_PUBLIC_SUPABASE_URL is required. Please check your environment variables.'
     )
   }
 
   if (!anonKey) {
+    console.error('❌ NEXT_PUBLIC_SUPABASE_ANON_KEY is missing')
     throw new Error(
       'NEXT_PUBLIC_SUPABASE_ANON_KEY is required. Please check your environment variables.'
     )
   }
 
-  // Production-specific validation
-  if (isProduction && !serviceKey) {
-    console.error('❌ PRODUCTION BUILD ERROR: SUPABASE_SERVICE_ROLE_KEY is required in production')
-    throw new Error(
-      'SUPABASE_SERVICE_ROLE_KEY is required for production builds. Please add this environment variable to your Vercel project.'
-    )
-  }
-
-  // Development warnings
-  if (!isProduction && !serviceKey) {
-    console.warn('⚠️  SUPABASE_SERVICE_ROLE_KEY not found - admin operations will use anon key')
-  }
-
   return {
     url,
     anonKey,
-    serviceKey,
     isProduction
   }
 }
 
-// Get validated configuration
-const config = validateAndGetConfig()
-
-// Create main client with environment-aware key selection
-function createMainClient(): SupabaseClient {
-  const key = config.isProduction && config.serviceKey 
-    ? config.serviceKey 
-    : config.anonKey
-
-  console.log(`🔗 Supabase client initialized for ${config.isProduction ? 'production' : 'development'} environment`)
-
-  return createClient(config.url, key, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true
-    }
-  })
+// Get validated configuration with error handling
+function getConfigSafely(): SupabaseConfig | null {
+  try {
+    return validateAndGetConfig()
+  } catch (error) {
+    console.error('Supabase configuration error:', error)
+    return null
+  }
 }
 
-// Create admin client with service role key
-function createAdminClient(): SupabaseClient {
-  if (!config.serviceKey) {
-    console.warn('⚠️  Admin client fallback: using main client (service key not available)')
-    return supabase
+// Create main client with frontend-safe configuration
+function createMainClient(): SupabaseClient | null {
+  const config = getConfigSafely()
+  
+  if (!config) {
+    console.error('❌ Failed to create Supabase client - configuration invalid')
+    return null
   }
 
-  return createClient(config.url, config.serviceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  })
-}
-
-// Export main clients
-export const supabase = createMainClient()
-export const supabaseAdmin = createAdminClient()
-
-// Environment info for debugging
-export const supabaseConfig = {
-  url: config.url,
-  hasServiceKey: !!config.serviceKey,
-  isProduction: config.isProduction,
-  environment: process.env.NODE_ENV || 'development'
-}
-
-// Client factory for API routes (with enhanced error handling)
-export function createApiClient(): SupabaseClient {
   try {
-    const key = config.isProduction && config.serviceKey 
-      ? config.serviceKey 
-      : config.anonKey
+    console.log(`🔗 Supabase client initialized for ${config.isProduction ? 'production' : 'development'} environment`)
 
-    return createClient(config.url, key, {
+    return createClient(config.url, config.anonKey, {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
       }
     })
   } catch (error) {
-    console.error('❌ Failed to create API client:', error)
-    throw new Error('Supabase API client initialization failed. Check environment variables.')
+    console.error('❌ Failed to create Supabase client:', error)
+    return null
   }
 }
 
-// Health check function
+// Export main client with null safety
+export const supabase = createMainClient()
+
+// Fallback client for when main client fails
+const fallbackClient = {
+  auth: {
+    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    signInWithPassword: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+    signUp: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+    signOut: () => Promise.resolve({ error: null }),
+    getUser: () => Promise.resolve({ data: { user: null }, error: null })
+  },
+  from: () => ({
+    select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }) }) }),
+    insert: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+    update: () => ({ eq: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }) }),
+    delete: () => ({ eq: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }) })
+  }),
+  rpc: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+  storage: {
+    from: () => ({
+      upload: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+      getPublicUrl: () => ({ data: { publicUrl: '' } }),
+      createSignedUrl: () => Promise.resolve({ data: null, error: new Error('Supabase not configured') }),
+      list: () => Promise.resolve({ data: [], error: null }),
+      remove: () => Promise.resolve({ data: null, error: null })
+    })
+  }
+}
+
+// Safe client that always returns something
+export const safeSupabase = supabase || fallbackClient
+
+// Environment info for debugging (frontend-safe)
+export const supabaseConfig = {
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'not-configured',
+  hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  isProduction: process.env.NODE_ENV === 'production',
+  environment: process.env.NODE_ENV || 'development',
+  clientInitialized: !!supabase
+}
+
+// Health check function with error handling
 export async function checkSupabaseConnection(): Promise<boolean> {
+  if (!supabase) {
+    console.warn('⚠️ Supabase client not initialized')
+    return false
+  }
+
   try {
     const { data, error } = await supabase.from('users').select('count').limit(1)
     if (error) {
