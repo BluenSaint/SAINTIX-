@@ -215,4 +215,3 @@ export function FileUpload({ onUploadComplete }: FileUploadProps) {
     </Card>
   )
 }
-

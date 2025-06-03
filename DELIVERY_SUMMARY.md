@@ -85,12 +85,12 @@ Execute these SQL scripts in your Supabase SQL Editor:
 
 ### Step 2: Environment Variables
 Add these to your Vercel project:
-```
+\`\`\`
 SUPABASE_URL=https://ggdahlksbsqpmfbhtcqd.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=[provided in files]
 NEXT_PUBLIC_SUPABASE_URL=https://ggdahlksbsqpmfbhtcqd.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[provided in files]
-```
+\`\`\`
 
 ### Step 3: Test & Deploy
 - Run `node test_supabase.mjs` to verify connection
@@ -193,4 +193,3 @@ Your Saintrix platform now has a **world-class backend infrastructure** that pro
 ---
 
 *Implementation completed successfully. All files committed to GitHub and ready for deployment. Refer to IMPLEMENTATION_GUIDE.md for detailed technical documentation.*
-

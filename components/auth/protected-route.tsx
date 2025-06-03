@@ -64,4 +64,3 @@ export function ProtectedRoute({ children, requiredRole, requiredPermission }: P
 
   return <>{children}</>
 }
-

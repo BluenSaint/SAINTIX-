@@ -51,34 +51,34 @@ The complete Supabase backend has been successfully implemented and integrated w
 #### Step 1: Create Missing Tables
 Execute the following SQL script in your Supabase SQL Editor:
 
-```sql
+\`\`\`sql
 -- File: create_missing_tables.sql
 -- Location: /saintrix/create_missing_tables.sql
-```
+\`\`\`
 
 #### Step 2: Setup Row-Level Security Policies
 Execute the following SQL script in your Supabase SQL Editor:
 
-```sql
+\`\`\`sql
 -- File: setup_rls_policies.sql  
 -- Location: /saintrix/setup_rls_policies.sql
-```
+\`\`\`
 
 #### Step 3: Create Storage Bucket
 Execute the following SQL script in your Supabase SQL Editor:
 
-```sql
+\`\`\`sql
 -- File: setup_storage_bucket.sql
 -- Location: /saintrix/setup_storage_bucket.sql
-```
+\`\`\`
 
 #### Step 4: Setup Database Triggers
 Execute the following SQL script in your Supabase SQL Editor:
 
-```sql
+\`\`\`sql
 -- File: setup_database_triggers.sql
 -- Location: /saintrix/setup_database_triggers.sql
-```
+\`\`\`
 
 ---
 
@@ -175,14 +175,14 @@ All tables have been configured with comprehensive RLS policies:
   - Session management
 
 #### Usage Example
-```tsx
+\`\`\`tsx
 import { useAuth } from '@/lib/auth'
 
 function MyComponent() {
   const { user, userProfile, signIn, signOut } = useAuth()
   // Component logic
 }
-```
+\`\`\`
 
 ### Data Management Hooks
 
@@ -226,12 +226,12 @@ function MyComponent() {
 
 Add these to your Vercel project settings:
 
-```env
+\`\`\`env
 SUPABASE_URL=https://ggdahlksbsqpmfbhtcqd.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnZGFobGtzYnNxcG1mYmh0Y3FkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODg5MDc4NywiZXhwIjoyMDY0NDY2Nzg3fQ.8biObYZJnOWcSELNQbSmmbwwsPG0G_SuxQdMM9YEVGA
 NEXT_PUBLIC_SUPABASE_URL=https://ggdahlksbsqpmfbhtcqd.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnZGFobGtzYnNxcG1mYmh0Y3FkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4OTA3ODcsImV4cCI6MjA2NDQ2Njc4N30.l2ztTe-5tohX3fhlTBWIIOt10z52NIzbOxKYxY2sSIY
-```
+\`\`\`
 
 ### Deployment Steps
 
@@ -279,10 +279,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 
 A comprehensive test script has been created to validate the Supabase integration:
 
-```bash
+\`\`\`bash
 # Test Supabase connection
 node test_supabase.mjs
-```
+\`\`\`
 
 ### Test Results
 - ✅ Database connection successful
@@ -309,7 +309,7 @@ After completing the manual setup steps:
 
 ### New Files Added
 
-```
+\`\`\`
 saintrix/
 ├── lib/
 │   ├── supabase.ts          # Supabase client and types
@@ -328,7 +328,7 @@ saintrix/
 │   ├── test_supabase.mjs     # Connection test script
 │   └── check_schema.py       # Database schema checker
 └── .env.local               # Environment variables (gitignored)
-```
+\`\`\`
 
 ---
 
@@ -366,7 +366,7 @@ saintrix/
 
 ### Debug Commands
 
-```bash
+\`\`\`bash
 # Check database schema
 python3 check_schema.py
 
@@ -378,7 +378,7 @@ npm run build
 
 # View environment variables
 cat .env.local
-```
+\`\`\`
 
 ---
 
@@ -502,4 +502,3 @@ Your Saintrix platform is now equipped with a world-class backend infrastructure
 ---
 
 *This documentation was generated as part of the complete Supabase backend implementation for Saintrix. For technical support or questions, refer to the troubleshooting section or contact your development team.*
-

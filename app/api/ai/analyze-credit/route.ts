@@ -192,4 +192,3 @@ function generateCreditAnalysis(creditReport: any) {
     }
   }
 }
-

@@ -61,4 +61,3 @@ def create_missing_tables():
 if __name__ == "__main__":
     print("🚀 Creating missing Supabase tables...")
     create_missing_tables()
-
