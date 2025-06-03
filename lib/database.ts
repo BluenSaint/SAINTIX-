@@ -1,6 +1,8 @@
 import { safeSupabase } from './supabase'
-import { supabaseAdmin } from './supabase-admin'
 import type { User, CreditReport, DisputeLetter, Notification, Payment, AILog } from './supabase'
+
+// Frontend-safe database operations
+// This file is imported by frontend components and must only use safeSupabase
 
 // Authentication helpers
 export const auth = {
@@ -20,7 +22,7 @@ export const auth = {
     
     // Create user profile
     if (data.user) {
-      const { error: profileError } = await supabase
+      const { error: profileError } = await safeSupabase
         .from('users')
         .insert({
           id: data.user.id,
@@ -60,7 +62,7 @@ export const auth = {
 
   // Get user profile
   async getUserProfile(userId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('users')
       .select('*')
       .eq('id', userId)
@@ -75,7 +77,7 @@ export const auth = {
 export const creditReports = {
   // Get user's credit reports
   async getUserReports(userId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('credit_reports')
       .select('*')
       .eq('user_id', userId)
@@ -87,7 +89,7 @@ export const creditReports = {
 
   // Upload new credit report
   async uploadReport(userId: string, fileUrl: string, source: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('credit_reports')
       .insert({
         user_id: userId,
@@ -100,19 +102,6 @@ export const creditReports = {
     
     if (error) throw error
     return data as CreditReport
-  },
-
-  // Mark report as reviewed (admin only)
-  async markAsReviewed(reportId: string) {
-    const { data, error } = await supabaseAdmin
-      .from('credit_reports')
-      .update({ reviewed: true })
-      .eq('id', reportId)
-      .select()
-      .single()
-    
-    if (error) throw error
-    return data as CreditReport
   }
 }
 
@@ -120,7 +109,7 @@ export const creditReports = {
 export const disputeLetters = {
   // Get user's dispute letters
   async getUserDisputes(userId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('dispute_letters')
       .select('*')
       .eq('user_id', userId)
@@ -132,7 +121,7 @@ export const disputeLetters = {
 
   // Create new dispute letter
   async createDispute(userId: string, creditBureau: string, type: string, content: string, generatedBy: 'ai' | 'manual' = 'manual') {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('dispute_letters')
       .insert({
         user_id: userId,
@@ -151,7 +140,7 @@ export const disputeLetters = {
 
   // Update dispute status
   async updateStatus(disputeId: string, status: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('dispute_letters')
       .update({ status })
       .eq('id', disputeId)
@@ -167,7 +156,7 @@ export const disputeLetters = {
 export const notifications = {
   // Get user notifications
   async getUserNotifications(userId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
@@ -177,25 +166,9 @@ export const notifications = {
     return data as Notification[]
   },
 
-  // Create notification (admin only)
-  async createNotification(userId: string, message: string) {
-    const { data, error } = await supabaseAdmin
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        message,
-        read: false
-      })
-      .select()
-      .single()
-    
-    if (error) throw error
-    return data as Notification
-  },
-
   // Mark notification as read
   async markAsRead(notificationId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('notifications')
       .update({ read: true })
       .eq('id', notificationId)
@@ -211,7 +184,7 @@ export const notifications = {
 export const payments = {
   // Get user payments
   async getUserPayments(userId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('payments')
       .select('*')
       .eq('user_id', userId)
@@ -219,23 +192,6 @@ export const payments = {
     
     if (error) throw error
     return data as Payment[]
-  },
-
-  // Create payment record (admin only)
-  async createPayment(userId: string, stripeId: string, plan: string, status: string) {
-    const { data, error } = await supabaseAdmin
-      .from('payments')
-      .insert({
-        user_id: userId,
-        stripe_id: stripeId,
-        plan,
-        status
-      })
-      .select()
-      .single()
-    
-    if (error) throw error
-    return data as Payment
   }
 }
 
@@ -243,7 +199,7 @@ export const payments = {
 export const aiLogs = {
   // Log AI interaction
   async logInteraction(userId: string, intent: string, inputData: any, response: any) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('ai_logs')
       .insert({
         user_id: userId,
@@ -260,7 +216,7 @@ export const aiLogs = {
 
   // Get user AI logs
   async getUserLogs(userId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('ai_logs')
       .select('*')
       .eq('user_id', userId)
@@ -275,7 +231,7 @@ export const aiLogs = {
 export const activityLog = {
   // Log user activity
   async logActivity(userId: string, activityType: string, description?: string, metadata?: any) {
-    const { data, error } = await supabase
+    const { data, error } = await safeSupabase
       .from('client_activity_log')
       .insert({
         user_id: userId,
@@ -291,50 +247,60 @@ export const activityLog = {
   }
 }
 
-// Admin operations
+// Frontend-safe admin operations (limited to what clients can see)
 export const admin = {
-  // Get all users (admin only)
-  async getAllUsers() {
-    const { data, error } = await supabaseAdmin
+  // Get basic user info (for client's own profile)
+  async getUserInfo(userId: string) {
+    const { data, error } = await safeSupabase
       .from('users')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .select('id, full_name, email, role, created_at')
+      .eq('id', userId)
+      .single()
     
     if (error) throw error
-    return data as User[]
+    return data as User
   },
 
-  // Get all credit reports (admin only)
-  async getAllCreditReports() {
-    const { data, error } = await supabaseAdmin
+  // Get user's own credit reports with basic info
+  async getUserCreditReports(userId: string) {
+    const { data, error } = await safeSupabase
       .from('credit_reports')
-      .select(`
-        *,
-        users (
-          full_name,
-          email
-        )
-      `)
+      .select('id, file_url, source, reviewed, uploaded_at')
+      .eq('user_id', userId)
       .order('uploaded_at', { ascending: false })
     
     if (error) throw error
     return data
   },
 
-  // Get all dispute letters (admin only)
-  async getAllDisputeLetters() {
-    const { data, error } = await supabaseAdmin
+  // Get user's own dispute letters with basic info
+  async getUserDisputeLetters(userId: string) {
+    const { data, error } = await safeSupabase
       .from('dispute_letters')
-      .select(`
-        *,
-        users (
-          full_name,
-          email
-        )
-      `)
+      .select('id, credit_bureau, type, status, generated_by, created_at')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
     
     if (error) throw error
     return data
   }
 }
+
+// Health check for frontend
+export const healthCheck = {
+  // Check if database connection is working
+  async checkConnection(): Promise<boolean> {
+    try {
+      const { error } = await safeSupabase
+        .from('users')
+        .select('count')
+        .limit(1)
+      
+      return !error
+    } catch (error) {
+      console.error('Database health check failed:', error)
+      return false
+    }
+  }
+}
+

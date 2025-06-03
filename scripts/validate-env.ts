@@ -29,24 +29,25 @@ const colors = {
 // EnvVarConfig: { required: EnvVar[], production: EnvVar[], optional: EnvVar[] }
 
 const ENV_VARS = {
-  // Required for all environments
+  // Required for all environments (frontend)
   required: [
     {
       name: 'NEXT_PUBLIC_SUPABASE_URL',
-      description: 'Supabase project URL',
+      description: 'Supabase project URL (public, safe for frontend)',
       example: 'https://your-project.supabase.co'
     },
     {
       name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-      description: 'Supabase anonymous/public key',
+      description: 'Supabase anonymous/public key (safe for frontend)',
       example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
     }
   ],
-  // Required only in production
+
+  // Required only in production (backend)
   production: [
     {
       name: 'SUPABASE_SERVICE_ROLE_KEY',
-      description: 'Supabase service role key (backend only)',
+      description: 'Supabase service role key (backend only, never expose to frontend)',
       example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
     }
   ],
@@ -102,22 +103,41 @@ function validateEnvVar(envVar) {
   const isPresent = value && value.trim() !== '';
   
   if (isPresent) {
-    // Basic validation for Supabase URLs and keys
+    // Enhanced validation for Supabase URLs and keys
     if (envVar.name === 'NEXT_PUBLIC_SUPABASE_URL') {
-      if (!value.startsWith('https://') || !value.includes('.supabase.co')) {
-        console.log(`  ${colors.red}❌ ${envVar.name} (invalid format - should be https://your-project.supabase.co)${colors.reset}`);
+      try {
+        const url = new URL(value);
+        if (!url.hostname.includes('supabase.co')) {
+          console.log(`  ${colors.red}❌ ${envVar.name} (invalid format - should contain 'supabase.co')${colors.reset}`);
+          return false;
+        }
+        if (!url.protocol.startsWith('https')) {
+          console.log(`  ${colors.red}❌ ${envVar.name} (must use HTTPS)${colors.reset}`);
+          return false;
+        }
+      } catch {
+        console.log(`  ${colors.red}❌ ${envVar.name} (invalid URL format)${colors.reset}`);
         return false;
       }
     }
     
-    if (envVar.name.includes('KEY') && value.length < 50) {
-      console.log(`  ${colors.yellow}⚠️  ${envVar.name} (seems too short for a valid key)${colors.reset}`);
+    if (envVar.name.includes('SUPABASE') && envVar.name.includes('KEY')) {
+      if (value.length < 100) {
+        console.log(`  ${colors.red}❌ ${envVar.name} (key appears invalid - too short)${colors.reset}`);
+        return false;
+      }
+      if (!value.startsWith('eyJ')) {
+        console.log(`  ${colors.red}❌ ${envVar.name} (key format invalid - should start with 'eyJ')${colors.reset}`);
+        return false;
+      }
     }
     
     console.log(`  ${colors.green}✅ ${envVar.name}${colors.reset}`);
     return true;
   } else {
     console.log(`  ${colors.red}❌ ${envVar.name} (missing)${colors.reset}`);
+    console.log(`    ${colors.yellow}Description: ${envVar.description}${colors.reset}`);
+    console.log(`    ${colors.yellow}Example: ${envVar.example}${colors.reset}`);
     return false;
   }
 }

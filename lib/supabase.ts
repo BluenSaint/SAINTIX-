@@ -7,6 +7,7 @@ interface SupabaseConfig {
   isProduction: boolean
 }
 
+// Enhanced error handling for missing environment variables
 function validateAndGetConfig(): SupabaseConfig {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -14,17 +15,51 @@ function validateAndGetConfig(): SupabaseConfig {
 
   // Critical validation - these are always required for frontend
   if (!url) {
-    console.error('❌ NEXT_PUBLIC_SUPABASE_URL is missing')
-    throw new Error(
-      'NEXT_PUBLIC_SUPABASE_URL is required. Please check your environment variables.'
-    )
+    const errorMsg = 'NEXT_PUBLIC_SUPABASE_URL is missing. Please check your environment variables.'
+    console.error('❌ Supabase Configuration Error:', errorMsg)
+    
+    if (isProduction) {
+      // In production, this is a critical error
+      throw new Error(`Production Error: ${errorMsg}`)
+    } else {
+      // In development, provide helpful guidance
+      console.warn('🔧 Development Setup Required:')
+      console.warn('1. Copy .env.local.example to .env.local')
+      console.warn('2. Add your Supabase URL to NEXT_PUBLIC_SUPABASE_URL')
+      console.warn('3. Restart your development server')
+      throw new Error(`Development Error: ${errorMsg}`)
+    }
   }
 
   if (!anonKey) {
-    console.error('❌ NEXT_PUBLIC_SUPABASE_ANON_KEY is missing')
-    throw new Error(
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY is required. Please check your environment variables.'
-    )
+    const errorMsg = 'NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Please check your environment variables.'
+    console.error('❌ Supabase Configuration Error:', errorMsg)
+    
+    if (isProduction) {
+      throw new Error(`Production Error: ${errorMsg}`)
+    } else {
+      console.warn('🔧 Development Setup Required:')
+      console.warn('1. Copy .env.local.example to .env.local')
+      console.warn('2. Add your Supabase anon key to NEXT_PUBLIC_SUPABASE_ANON_KEY')
+      console.warn('3. Restart your development server')
+      throw new Error(`Development Error: ${errorMsg}`)
+    }
+  }
+
+  // Validate URL format
+  try {
+    new URL(url)
+  } catch {
+    const errorMsg = `Invalid NEXT_PUBLIC_SUPABASE_URL format: ${url}`
+    console.error('❌ Supabase URL Error:', errorMsg)
+    throw new Error(errorMsg)
+  }
+
+  // Validate key format (basic check)
+  if (anonKey.length < 100) {
+    const errorMsg = 'NEXT_PUBLIC_SUPABASE_ANON_KEY appears to be invalid (too short)'
+    console.error('❌ Supabase Key Error:', errorMsg)
+    throw new Error(errorMsg)
   }
 
   return {
@@ -34,17 +69,24 @@ function validateAndGetConfig(): SupabaseConfig {
   }
 }
 
-// Get validated configuration with error handling
+// Safe configuration getter with error handling
 function getConfigSafely(): SupabaseConfig | null {
   try {
     return validateAndGetConfig()
   } catch (error) {
     console.error('Supabase configuration error:', error)
+    
+    // In production, we want to fail fast
+    if (process.env.NODE_ENV === 'production') {
+      throw error
+    }
+    
+    // In development, return null to use fallback
     return null
   }
 }
 
-// Create main client with frontend-safe configuration
+// Create main client with enhanced error handling
 function createMainClient(): SupabaseClient | null {
   const config = getConfigSafely()
   
@@ -55,16 +97,43 @@ function createMainClient(): SupabaseClient | null {
 
   try {
     console.log(`🔗 Supabase client initialized for ${config.isProduction ? 'production' : 'development'} environment`)
+    console.log(`📍 URL: ${config.url}`)
+    console.log(`🔑 Key: ${config.anonKey.substring(0, 20)}...`)
 
-    return createClient(config.url, config.anonKey, {
+    const client = createClient(config.url, config.anonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'saintrix-frontend'
+        }
       }
     })
+
+    // Test the client connection
+    client.from('users').select('count').limit(1).then(({ error }) => {
+      if (error) {
+        console.warn('⚠️ Supabase connection test failed:', error.message)
+      } else {
+        console.log('✅ Supabase connection verified')
+      }
+    }).catch((error) => {
+      console.warn('⚠️ Supabase connection test error:', error)
+    })
+
+    return client
   } catch (error) {
     console.error('❌ Failed to create Supabase client:', error)
+    
+    // In production, throw the error to fail fast
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`Supabase client creation failed: ${error}`)
+    }
+    
     return null
   }
 }
