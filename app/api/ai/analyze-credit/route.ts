@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createApiClient } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createApiClient()
     const { userId, creditReportId } = await request.json()
 
     // Validate required fields
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user and credit report
-    const { data: creditReport, error: reportError } = await supabaseAdmin
+    const { data: creditReport, error: reportError } = await supabase
       .from('credit_reports')
       .select('*, users(full_name, email)')
       .eq('id', creditReportId)
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     const analysis = generateCreditAnalysis(creditReport)
 
     // Log AI usage
-    await supabaseAdmin
+    await supabase
       .from('ai_logs')
       .insert({
         user_id: userId,
@@ -57,6 +58,15 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Credit analysis error:', error)
+    
+    // Check if it's a Supabase configuration error
+    if (error instanceof Error && error.message.includes('environment variables')) {
+      return NextResponse.json(
+        { error: 'Service configuration error. Please contact support.' },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -192,3 +202,4 @@ function generateCreditAnalysis(creditReport: any) {
     }
   }
 }
+

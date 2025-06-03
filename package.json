@@ -4,9 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/validate-env.js && next build",
+    "build:safe": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "validate-env": "node scripts/validate-env.js",
+    "generate-env-templates": "node scripts/validate-env.js --generate-templates",
+    "prebuild": "node scripts/validate-env.js",
+    "postinstall": "node scripts/validate-env.js --generate-templates"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

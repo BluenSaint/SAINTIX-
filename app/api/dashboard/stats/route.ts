@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createApiClient } from '@/lib/supabase'
 
 // Get User Dashboard Statistics
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createApiClient()
+    
     // Get user from session
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
@@ -33,6 +35,15 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Dashboard API Error:', error)
+    
+    // Check if it's a Supabase configuration error
+    if (error instanceof Error && error.message.includes('environment variables')) {
+      return NextResponse.json(
+        { error: 'Service configuration error. Please contact support.' },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -43,6 +54,7 @@ export async function GET(request: NextRequest) {
 // Update user dashboard preferences
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createApiClient()
     const { preferences } = await request.json()
     
     // Get user from session
@@ -64,9 +76,19 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Dashboard preferences error:', error)
+    
+    // Check if it's a Supabase configuration error
+    if (error instanceof Error && error.message.includes('environment variables')) {
+      return NextResponse.json(
+        { error: 'Service configuration error. Please contact support.' },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
   }
 }
+

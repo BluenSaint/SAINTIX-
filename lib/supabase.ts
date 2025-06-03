@@ -1,34 +1,81 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-
-if (!supabaseUrl) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')
+// Environment validation and configuration
+interface SupabaseConfig {
+  url: string
+  anonKey: string
+  serviceKey?: string
+  isProduction: boolean
 }
 
-// Environment-aware client configuration
-const supabaseKey = process.env.NODE_ENV === 'production'
-  ? process.env.SUPABASE_SERVICE_ROLE_KEY!
-  : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+function validateAndGetConfig(): SupabaseConfig {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const isProduction = process.env.NODE_ENV === 'production'
 
-if (!supabaseKey) {
-  throw new Error(`Missing Supabase key for ${process.env.NODE_ENV} environment`)
+  // Critical validation - these are always required
+  if (!url) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_URL is required. Please check your environment variables.'
+    )
+  }
+
+  if (!anonKey) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY is required. Please check your environment variables.'
+    )
+  }
+
+  // Production-specific validation
+  if (isProduction && !serviceKey) {
+    console.error('❌ PRODUCTION BUILD ERROR: SUPABASE_SERVICE_ROLE_KEY is required in production')
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY is required for production builds. Please add this environment variable to your Vercel project.'
+    )
+  }
+
+  // Development warnings
+  if (!isProduction && !serviceKey) {
+    console.warn('⚠️  SUPABASE_SERVICE_ROLE_KEY not found - admin operations will use anon key')
+  }
+
+  return {
+    url,
+    anonKey,
+    serviceKey,
+    isProduction
+  }
 }
 
-// Main Supabase client with environment-aware key selection
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Get validated configuration
+const config = validateAndGetConfig()
 
-// For admin operations, create a separate client with service role key when available
-function createAdminClient() {
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  
-  if (!supabaseServiceKey) {
-    // In development or when service key is not available, return the main client
-    console.warn('SUPABASE_SERVICE_ROLE_KEY not available - using main client for admin operations')
+// Create main client with environment-aware key selection
+function createMainClient(): SupabaseClient {
+  const key = config.isProduction && config.serviceKey 
+    ? config.serviceKey 
+    : config.anonKey
+
+  console.log(`🔗 Supabase client initialized for ${config.isProduction ? 'production' : 'development'} environment`)
+
+  return createClient(config.url, key, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  })
+}
+
+// Create admin client with service role key
+function createAdminClient(): SupabaseClient {
+  if (!config.serviceKey) {
+    console.warn('⚠️  Admin client fallback: using main client (service key not available)')
     return supabase
   }
-  
-  return createClient(supabaseUrl, supabaseServiceKey, {
+
+  return createClient(config.url, config.serviceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
@@ -36,7 +83,52 @@ function createAdminClient() {
   })
 }
 
+// Export main clients
+export const supabase = createMainClient()
 export const supabaseAdmin = createAdminClient()
+
+// Environment info for debugging
+export const supabaseConfig = {
+  url: config.url,
+  hasServiceKey: !!config.serviceKey,
+  isProduction: config.isProduction,
+  environment: process.env.NODE_ENV || 'development'
+}
+
+// Client factory for API routes (with enhanced error handling)
+export function createApiClient(): SupabaseClient {
+  try {
+    const key = config.isProduction && config.serviceKey 
+      ? config.serviceKey 
+      : config.anonKey
+
+    return createClient(config.url, key, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  } catch (error) {
+    console.error('❌ Failed to create API client:', error)
+    throw new Error('Supabase API client initialization failed. Check environment variables.')
+  }
+}
+
+// Health check function
+export async function checkSupabaseConnection(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.from('users').select('count').limit(1)
+    if (error) {
+      console.error('❌ Supabase connection failed:', error.message)
+      return false
+    }
+    console.log('✅ Supabase connection verified')
+    return true
+  } catch (error) {
+    console.error('❌ Supabase health check failed:', error)
+    return false
+  }
+}
 
 // Database types (to be expanded as needed)
 export interface User {
@@ -116,3 +208,4 @@ export interface ClientActivityLog {
   user_agent?: string
   created_at: string
 }
+
