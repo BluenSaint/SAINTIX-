@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { safeSupabase } from '@/lib/supabase'
 import type { User, CreditReport, DisputeLetter, Notification, Payment, AILog } from '@/lib/supabase'
 
 export interface DashboardData {
@@ -34,7 +34,7 @@ export function useClientDashboard() {
       setData(prev => ({ ...prev, loading: true, error: null }))
 
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      const { data: { user }, error: userError } = await safeSupabase.auth.getUser()
       if (userError) throw userError
       if (!user) throw new Error('No authenticated user')
 
@@ -169,7 +169,7 @@ export function useAdminDashboard() {
       setData(prev => ({ ...prev, loading: true, error: null }))
 
       // Check if user is admin
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      const { data: { user }, error: userError } = await safeSupabase.auth.getUser()
       if (userError) throw userError
       if (!user) throw new Error('No authenticated user')
 
@@ -184,12 +184,12 @@ export function useAdminDashboard() {
 
       // Fetch all data for admin view
       const [usersResult, reportsResult, disputesResult, notificationsResult, paymentsResult, aiLogsResult] = await Promise.all([
-        supabase.from('users').select('*').order('created_at', { ascending: false }),
-        supabase.from('credit_reports').select('*, users(full_name, email)').order('uploaded_at', { ascending: false }),
-        supabase.from('dispute_letters').select('*, users(full_name, email)').order('created_at', { ascending: false }),
-        supabase.from('notifications').select('*, users(full_name, email)').order('created_at', { ascending: false }),
-        supabase.from('payments').select('*, users(full_name, email)').order('started_at', { ascending: false }),
-        supabase.from('ai_logs').select('*, users(full_name, email)').order('timestamp', { ascending: false })
+        safeSupabase.from('users').select('*').order('created_at', { ascending: false }),
+        safeSupabase.from('credit_reports').select('*, users(full_name, email)').order('uploaded_at', { ascending: false }),
+        safeSupabase.from('dispute_letters').select('*, users(full_name, email)').order('created_at', { ascending: false }),
+        safeSupabase.from('notifications').select('*, users(full_name, email)').order('created_at', { ascending: false }),
+        safeSupabase.from('payments').select('*, users(full_name, email)').order('started_at', { ascending: false }),
+        safeSupabase.from('ai_logs').select('*, users(full_name, email)').order('timestamp', { ascending: false })
       ])
 
       setData({

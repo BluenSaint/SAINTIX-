@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { safeSupabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { User as AppUser } from '@/lib/supabase'
 
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    safeSupabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchUserProfile(session.user.id)
@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = safeSupabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null)
         if (session?.user) {
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const createUserProfile = async (userId: string) => {
     try {
-      const { data: authUser } = await supabase.auth.getUser()
+      const { data: authUser } = await safeSupabase.auth.getUser()
       if (!authUser.user) return
 
       const { data, error } = await supabase
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await safeSupabase.auth.signInWithPassword({
       email,
       password
     })
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { error } = await safeSupabase.auth.signUp({
       email,
       password,
       options: {
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    await safeSupabase.auth.signOut()
   }
 
   const updateProfile = async (updates: Partial<AppUser>) => {

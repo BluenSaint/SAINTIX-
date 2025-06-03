@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { safeSupabase } from './supabase'
 
 export interface UploadResult {
   success: boolean
@@ -61,7 +61,7 @@ export async function uploadFile(
     const filePath = `${userId}/${category}/${fileName}`
     
     // Upload file
-    const { data, error } = await supabase.storage
+    const { data, error } = await safeSupabase.storage
       .from('client_uploads')
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -76,7 +76,7 @@ export async function uploadFile(
     }
     
     // Get public URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = safeSupabase.storage
       .from('client_uploads')
       .getPublicUrl(filePath)
     
@@ -101,7 +101,7 @@ export async function uploadFile(
  */
 export async function deleteFile(filePath: string): Promise<boolean> {
   try {
-    const { error } = await supabase.storage
+    const { error } = await safeSupabase.storage
       .from('client_uploads')
       .remove([filePath])
     
@@ -120,7 +120,7 @@ export async function deleteFile(filePath: string): Promise<boolean> {
  */
 export async function getSignedUrl(filePath: string, expiresIn: number = 3600): Promise<string | null> {
   try {
-    const { data, error } = await supabase.storage
+    const { data, error } = await safeSupabase.storage
       .from('client_uploads')
       .createSignedUrl(filePath, expiresIn)
     
@@ -146,7 +146,7 @@ export async function listUserFiles(userId: string, category?: string) {
   try {
     const path = category ? `${userId}/${category}` : userId
     
-    const { data, error } = await supabase.storage
+    const { data, error } = await safeSupabase.storage
       .from('client_uploads')
       .list(path, {
         limit: 100,
